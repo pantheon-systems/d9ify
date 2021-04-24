@@ -1,6 +1,6 @@
 {
     "name": "stovak/d9ify",
-    "description": "The amazing d9ification machine",
+    "description": "The amazing d9-ification machine",
     "type": "project",
     "authors": [
         {
@@ -9,5 +9,21 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {}
+    "autoload": {
+        "psr-4": {
+            "D9ify\\" : "src/D9ify"
+        },
+        "classmap": [
+            "src/D9ifyApplication.php"
+        ]
+    },
+    "require": {
+        "symfony/console": "^3.3",
+        "composer/composer": "^2"
+    },
+    "scripts": {
+        "d9ify": [
+            "D9ifyApplication::process"
+        ]
+    }
 }
