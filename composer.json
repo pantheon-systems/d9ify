@@ -1,0 +1,13 @@
+{
+    "name": "stovak/d9ify",
+    "description": "The amazing d9ification machine",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Tom Stovall",
+            "email": "tom.stovall@pantheon.io"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
