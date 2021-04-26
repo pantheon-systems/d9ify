@@ -2,7 +2,7 @@
 
 ## Status
 
-![Passing Tests](https://github.com/github/docs/actions/workflows/php.yml/badge.svg)
+![Passing Tests](https://github.com/stovak/d9ify/actions/workflows/php.yml/badge.svg)
 
 
 ## USAGE
