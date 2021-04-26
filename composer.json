@@ -2,6 +2,7 @@
     "name": "stovak/d9ify",
     "description": "The amazing d9-ification machine",
     "type": "project",
+    "license": "MIT",
     "authors": [
         {
             "name": "Tom Stovall",
