@@ -27,7 +27,7 @@
         "stovak/php-composer-reader": "dev-master",
         "rogervila/array-diff-multidimensional": "dev-master",
         "phpunit/phpunit": "^10",
-        "squizlabs/php_codesniffer": "*"
+        "squizlabs/php_codesniffer": "^4"
     },
     "scripts": {
         "d9ify": [
