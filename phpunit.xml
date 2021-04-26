@@ -11,11 +11,6 @@
     <testsuite name="unit">
       <directory>tests/unit</directory>
     </testsuite>
-
-    <testsuite name="end-to-end">
-      <directory suffix=".phpt">tests/end-to-end</directory>
-      <exclude>tests/end-to-end/_files</exclude>
-    </testsuite>
   </testsuites>
 
   <coverage processUncoveredFiles="true"
