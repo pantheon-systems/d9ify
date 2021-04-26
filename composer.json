@@ -8,6 +8,12 @@
             "email": "tom.stovall@pantheon.io"
         }
     ],
+    "repositories": [
+        {
+            "type": "github",
+            "url": "git@github.com:stovak/php-composer-reader.git"
+        }
+    ],
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
@@ -19,11 +25,18 @@
     },
     "require": {
         "symfony/console": "^3.3",
-        "composer/composer": "^2"
+        "composer/composer": "^2",
+        "stovak/php-composer-reader": "dev-master",
+        "rogervila/array-diff-multidimensional": "dev-master",
+        "jfcherng/php-diff": "v6.x-dev",
+        "phpunit/phpunit": "10.0.x-dev"
     },
     "scripts": {
         "d9ify": [
             "D9ifyApplication::process"
+        ],
+        "test": [
+            "vendor/bin/phpunit"
         ]
     }
 }

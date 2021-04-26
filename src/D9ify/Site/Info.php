@@ -5,31 +5,120 @@ namespace D9ify\Site;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Class Info
+ *
+ * @package D9ify\Site
+ */
 class Info {
 
-  protected string $id;
-  protected string $name;
-  protected string $label;
-  protected string $created;
-  protected string $framework;
-  protected string $region;
-  protected string $organization;
-  protected string $plan_name;
-  protected int $max_num_cdes;
-  protected string $upstream;
-  protected string $holder_type;
-  protected string $holder_id;
-  protected string $owner;
-  protected bool $frozen;
+  /**
+   * @var string|null
+   */
+  protected ?string $id = null;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $name = null;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $label;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $created;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $framework;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $region;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $organization;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $plan_name;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $upstream;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $holder_type;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $holder_id;
+
+  /**
+   * @var string|null
+   */
+  protected ?string $owner;
+
+  /**
+   * @var string|null
+   */
   protected ?string $last_frozen_at;
 
-  public function __construct($site_id) {
-    $siteinfo = $this->getPantheonSiteInfo($site_id);
-    foreach($siteinfo as $key => $value) {
-      call_user_func([$this, "set" . str_replace(" ", "", ucwords(str_replace("_", " ", $key))) ], $value);
+  /**
+   * @var bool|null
+   */
+  protected ?bool $frozen;
+
+  /**
+   * @var int|null
+   */
+  protected ?int $max_num_cdes;
+
+  /**
+   * Info constructor.
+   *
+   * @param null $site_id
+   */
+  public function __construct($site_id = null) {
+
+    if ($site_id !== null) {
+      if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $site_id) === 1) {
+        $this->setId($site_id);
+      }
+      if (is_string($site_id)) {
+        $this->setName($site_id);
+      }
     }
   }
 
+
+  /**
+   * @return bool
+   * @throws \JsonException
+   */
+  public function refresh() {
+    return $this->valid();
+  }
+
+  /**
+   * @return string|null
+   */
+  public function getRef(): ?string {
+    return $this->getId() ?? $this->getName();
+  }
 
   /**
    * @param $site_id
@@ -73,7 +162,7 @@ class Info {
   /**
    * @return string
    */
-  public function getId(): string {
+  public function getId(): ?string {
     return $this->id;
   }
 
@@ -87,7 +176,7 @@ class Info {
   /**
    * @return string
    */
-  public function getName(): string {
+  public function getName(): ?string {
     return $this->name;
   }
 
@@ -281,6 +370,15 @@ class Info {
   }
 
 
-
+  /**
+   * @return bool
+   */
+  public function valid(): bool {
+    $siteinfo = $this->getPantheonSiteInfo($this->getId());
+    foreach($siteinfo as $key => $value) {
+      call_user_func([$this, "set" . str_replace(" ", "", ucwords(str_replace("_", " ", $key))) ], $value);
+    }
+    return true;
+  }
 
 }

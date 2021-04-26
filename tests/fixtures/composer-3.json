@@ -1,0 +1,85 @@
+{
+    "name": "pantheon-upstreams/amadioha",
+    "description": "The Nigerian God of Justice and Judgement tests your COS. Does it merit production?",
+    "type": "project",
+    "prefer-stable": true,
+    "minimum-stability": "dev",
+    "require": {
+        "drush/drush": "^10",
+        "guzzlehttp/guzzle": "^6",
+        "pantheon-upstreams/upstream-configuration": "*",
+        "psr/http-client": "^1.0",
+        "symfony/yaml": "^3",
+        "twbs/bootstrap": "dev-main"
+    },
+    "conflict": {
+        "drupal/drupal": "*"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "\\Pantheon\\Amadioha\\BuildScript::postInstall"
+        ],
+        "post-update-cmd": [
+            "\\Pantheon\\Amadioha\\BuildScript::postUpdate"
+        ],
+        "ensure": [
+            "\\Pantheon\\Amadioha\\BuildScript::ensureVersionEnvironments"
+        ],
+        "update-example-responses": [
+            "\\Pantheon\\Amadioha\\BuildScript::updateExampleResponses"
+        ]
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packages.drupal.org/8"
+        },
+        {
+            "type": "path",
+            "url": "upstream-configuration"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Pantheon\\Amadioha\\": "web/src/Amadioha",
+            "Pantheon\\HTML\\": "web/src/HTML"
+        }
+    },
+    "extra": {
+        "amadioha": {
+            "supported_versions": [ "v53", "v55", "v56", "v70", "v71", "v72", "v73", "v74" ]
+        },
+        "installer-paths": {
+            "web/core": ["type:drupal-core"],
+            "web/libraries/{$name}": ["type:drupal-library","type:bower-asset","type:npm-asset"],
+            "web/modules/composer/{$name}": ["type:drupal-module"],
+            "web/profiles/composer/{$name}": ["type:drupal-profile"],
+            "web/themes/composer/{$name}": ["type:drupal-theme"],
+            "drush/Commands/contrib/{$name}": ["type:drupal-drush"],
+            "web/private/scripts/quicksilver/{$name}/": ["type:quicksilver-script"]
+        },
+        "composer-exit-on-patch-failure": true,
+        "patchLevel": {
+            "drupal/core": "-p2"
+        },
+        "drupal-scaffold": {
+            "allowed-packages": [
+                "pantheon-systems/drupal-integrations"
+            ],
+            "locations": {
+                "web-root": "./web"
+            },
+            "file-mapping": {
+                "[project-root]/.editorconfig": false,
+                "[project-root]/pantheon.upstream.yml": false,
+                "[project-root]/.gitattributes": false
+            }
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "process-timeout": 0,
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
+}

@@ -21,13 +21,32 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
  */
 class ProcessCommand extends Command {
 
-  static $HELP_TEXT = <<<EOF
+  /**
+   * @var string
+   */
+  static $HELP_TEXT = [
+    "*******************************************************************************",
+    "* THIS SCRIPT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE    *",
+    "* ERROR CHECKING. PLEASE USE AT YOUR OWN RISK.                                *",
+    "*******************************************************************************",
+    "* This script searches for every {modulename}.info.yml. If that file has a    *",
+    "* 'project' proerty (i.e. it's been thru the automated services at            *",
+    "* drupal.org), it records that property and version number and ensures        *",
+    "* those values are in the composer.json 'require' array. Your old composer    *",
+    "* file will re renamed backup-*-composer.json.                                *",
+    "*******************************************************************************",
+    "* The guide to use this file is in /README.md                                 *",
+    "*******************************************************************************",
+  ];
 
-   // TODO Write helptext
-
-EOF;
-
+  /**
+   * @var \D9ify\Site\Directory
+   */
   protected Directory $sourceDirectory;
+
+  /**
+   * @var \D9ify\Site\Directory
+   */
   protected Directory $destinationDirectory;
 
   /**
@@ -84,24 +103,38 @@ EOF;
    * @param \Symfony\Component\Console\Output\OutputInterface $output
    *
    * @return int|void
+   * @throws \JsonException
    */
   protected function execute(InputInterface $input, OutputInterface $output) {
+    $output->writeln(static::$HELP_TEXT);
     $this->setSourceDirectory(Directory::ensure( $input->getArgument('source'), $output));
     $this->setDestinationDirectory(Directory::ensure(
       $input->getArgument('destination') ??
         $this->sourceDirectory->getSiteInfo()->getName() . "-" . date('Y'),
       $output
     ));
-    $this->updateDestModulesAndThemesFromSource();
-
-    $this->endWrite($input, $output);
+    $this->updateDestModulesAndThemesFromSource($input, $output);
+    $this->updateDestEsLibrariesFromSource($input, $output);
+    return $this->endWrite($input, $output);
   }
 
+  /**
+   * @param \Symfony\Component\Console\Input\InputInterface $input
+   * @param \Symfony\Component\Console\Output\OutputInterface $output
+   *
+   * @return int|mixed
+   */
   protected function endWrite(InputInterface $input, OutputInterface $output) {
-    $output->writeln("The following changes are being applied to the destination site composer: ");
-    $question = new ConfirmationQuestion("Write these changes to the composer file at {$this->getRealPath()}?  Type 'yes' to continue: ", false);
+    $output->writeln([
+      "*********************************************************************",
+      "* These changes are being applied to the destination site composer: *",
+      "*********************************************************************",
+    ]);
+    $output->writeln($this->destinationDirectory->getComposerObject()->getDiff());
+    $output->writeln(sprintf("Write these changes to the composer file at %s?", $this->destinationDirectory->getComposerObject()->getRealPath()));
+    $question = new ConfirmationQuestion(" Type '(y)es' to continue: ", false);
     $helper = $this->getHelper('question');
-    if (!$helper->ask($input, $output, $question)) {
+    if ($helper->ask($input, $output, $question)) {
       return $this->getDestinationDirectory()->getComposerObject()->writeFile($output);
     }
     $output->writeln("The composer Files were not changed");
@@ -109,10 +142,12 @@ EOF;
   }
 
   /**
-   * @param $infoFiles
+   * @param \Symfony\Component\Console\Input\InputInterface $input
+   * @param \Symfony\Component\Console\Output\OutputInterface $output
+   *
    */
   function updateDestModulesAndThemesFromSource(InputInterface $input,OutputInterface $output) {
-    $infoFiles = $this->sourceDirectory->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/');
+    $infoFiles = $this->sourceDirectory->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
     $toMerge = [];
     foreach ($infoFiles as $fileName => $fileInfo) {
       $contents = file_get_contents($fileName);
@@ -125,43 +160,37 @@ EOF;
       }
     }
     $this->getDestinationDirectory()->getComposerObject()->addChange($toMerge);
+    $output->write(PHP_EOL);
+    $output->write(PHP_EOL);
+    $output->writeln("Found new modules from old site:");
+    $output->writeln(print_r($toMerge['require'], true));
+    return 0;
   }
 
   /**
-   * @param array $newComposerSettings
+   * @param \Symfony\Component\Console\Input\InputInterface $input
+   * @param \Symfony\Component\Console\Output\OutputInterface $output
    *
    * @throws \JsonException
    */
-  function deepMergeWithDestinationSiteComposer(array $newComposerSettings) {
-    try {
-
-      $destComposerToWrite = array_merge_recursive($newComposerSettings, $destSiteComposerContents);
-      $composerPath = getcwd() . "/" . DESTINATION_SITE_INFO['name'] . '/composer.json';
-      $composerBackup = dirname($composerPath) . "/composer-backup-". uniqid() . ".json";
-      copy($composerPath, $composerBackup);
-      $command = "echo \"$composerBackup\" >> " . dirname($composerPath) . "/.gitignore";
-      exec($command, $output, $status);
-      echo "Backup of composer file created: {$composerBackup}" . PHP_EOL;
-      file_put_contents($composerPath, json_encode($destComposerToWrite, JSON_PRETTY_PRINT, 5));
-      echo "The following changes are being applied to the destination site composer: " . print_r($diff, true);
-      echo "Write these changes to the composer file at {$composerPath}?  Type 'yes' to continue: ";
-      $handle = fopen ("php://stdin","r");
-      $line = fgets($handle);
-      if(trim($line) != 'yes'){
-        echo "ABORTING!\n";
-        exit;
+  protected function updateDestEsLibrariesFromSource(InputInterface $input, OutputInterface $output) {
+    $fileList = $this->sourceDirectory->spelunkFilesFromRegex('/libraries\/[0-9a-z-]*\/(package\.json$)/', $output);
+    $toMerge = [];
+    foreach ($fileList as $key => $file) {
+      $package = \json_decode(file_get_contents($file->getRealPath()), TRUE, 10, JSON_THROW_ON_ERROR);
+      if (isset($package['name'])) {
+        $libraryName = @array_pop(explode("/", $package['name']));
+        $toMerge['require']["npm-asset/" . $libraryName] = "^" . $package['version'];
       }
-      echo "Destination Site Composer File Updated with new settings." . PHP_EOL;
-      return true;
-    } catch (\Exception $e) {
-      echo $e->getMessage();
-      exit();
-    } catch (\Throwable $t) {
-      echo $t->getMessage();
-      exit();
     }
-    return false;
-  }
 
+    $toMerge['extra']['installer-paths']['web/libraries/{$name}'] = [
+      "type:bower-asset",
+      "type:npm-asset",
+    ];
+    $output->writeln("Found new ESLibraries from old site:");
+    $output->writeln(print_r($toMerge, true));
+    $this->getDestinationDirectory()->getComposerObject()->addChange($toMerge);
+  }
 
 }
