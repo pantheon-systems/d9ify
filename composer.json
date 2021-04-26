@@ -28,8 +28,7 @@
         "composer/composer": "^2",
         "stovak/php-composer-reader": "dev-master",
         "rogervila/array-diff-multidimensional": "dev-master",
-        "jfcherng/php-diff": "v6.x-dev",
-        "phpunit/phpunit": "10.0.x-dev"
+        "phpunit/phpunit": "^10"
     },
     "scripts": {
         "d9ify": [
