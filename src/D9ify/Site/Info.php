@@ -10,115 +10,119 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @package D9ify\Site
  */
-class Info {
+class Info implements InfoInterface
+{
 
   /**
    * @var string|null
    */
-  protected ?string $id = null;
+    protected ?string $id = null;
 
   /**
    * @var string|null
    */
-  protected ?string $name = null;
+    protected ?string $name = null;
 
   /**
    * @var string|null
    */
-  protected ?string $label;
+    protected ?string $label;
 
   /**
    * @var string|null
    */
-  protected ?string $created;
+    protected ?string $created;
 
   /**
    * @var string|null
    */
-  protected ?string $framework;
+    protected ?string $framework;
 
   /**
    * @var string|null
    */
-  protected ?string $region;
+    protected ?string $region;
 
   /**
    * @var string|null
    */
-  protected ?string $organization;
+    protected ?string $organization;
 
   /**
    * @var string|null
    */
-  protected ?string $plan_name;
+    protected ?string $plan_name;
 
   /**
    * @var string|null
    */
-  protected ?string $upstream;
+    protected ?string $upstream;
 
   /**
    * @var string|null
    */
-  protected ?string $holder_type;
+    protected ?string $holder_type;
 
   /**
    * @var string|null
    */
-  protected ?string $holder_id;
+    protected ?string $holder_id;
 
   /**
    * @var string|null
    */
-  protected ?string $owner;
+    protected ?string $owner;
 
   /**
    * @var string|null
    */
-  protected ?string $last_frozen_at;
+    protected ?string $last_frozen_at;
 
   /**
    * @var bool|null
    */
-  protected ?bool $frozen;
+    protected ?bool $frozen;
 
   /**
    * @var int|null
    */
-  protected ?int $max_num_cdes;
+    protected ?int $max_num_cdes;
 
   /**
    * Info constructor.
    *
    * @param null $site_id
    */
-  public function __construct($site_id = null) {
+    public function __construct($site_id = null)
+    {
 
-    if ($site_id !== null) {
-      if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $site_id) === 1) {
-        $this->setId($site_id);
-      }
-      if (is_string($site_id)) {
-        $this->setName($site_id);
-      }
+        if ($site_id !== null) {
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $site_id) === 1) {
+                $this->setId($site_id);
+            }
+            if (is_string($site_id)) {
+                $this->setName($site_id);
+            }
+        }
     }
-  }
 
 
   /**
    * @return bool
    * @throws \JsonException
    */
-  public function refresh() {
-    return $this->valid();
-  }
+    public function refresh()
+    {
+        return $this->valid();
+    }
 
   /**
    * @return string|null
    */
-  public function getRef(): ?string {
-    return $this->getId() ?? $this->getName();
-  }
+    public function getRef(): ?string
+    {
+        return $this->getId() ?? $this->getName();
+    }
 
   /**
    * @param $site_id
@@ -147,238 +151,269 @@ class Info {
    * )
    */
 
-  function getPantheonSiteInfo($site_id): ?array {
-    $command = sprintf('terminus site:info %s --format=json', $site_id);
-    exec($command, $output, $status);
-    if ($status !== 0) {
-      // Only let us know if something went wrong.
-      echo $output;
+    protected function getPantheonSiteInfo($site_id): ?array
+    {
+        $command = sprintf('terminus site:info %s --format=json', $site_id);
+        exec($command, $output, $status);
+        if ($status !== 0) {
+          // Only let us know if something went wrong.
+            echo $output;
+        }
+        return ($status === 0) ?
+        json_decode(join("", $output), true, 5, JSON_THROW_ON_ERROR) :
+        null;
     }
-    return ($status === 0) ?
-      json_decode(join("", $output), TRUE, 5, JSON_THROW_ON_ERROR) :
-      NULL;
-  }
 
   /**
    * @return string
    */
-  public function getId(): ?string {
-    return $this->id;
-  }
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
 
   /**
    * @param string $id
    */
-  public function setId(string $id): void {
-    $this->id = $id;
-  }
+    public function setId(string $id = null): void
+    {
+        $this->id = $id;
+    }
 
   /**
    * @return string
    */
-  public function getName(): ?string {
-    return $this->name;
-  }
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
 
   /**
    * @param string $name
    */
-  public function setName(string $name): void {
-    $this->name = $name;
-  }
+    public function setName(string $name = null): void
+    {
+        $this->name = $name;
+    }
 
   /**
    * @return string
    */
-  public function getLabel(): string {
-    return $this->label;
-  }
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
 
   /**
    * @param string $label
    */
-  public function setLabel(string $label): void {
-    $this->label = $label;
-  }
+    public function setLabel(string $label): void
+    {
+        $this->label = $label;
+    }
 
   /**
    * @return string
    */
-  public function getCreated(): string {
-    return $this->created;
-  }
+    public function getCreated(): string
+    {
+        return $this->created;
+    }
 
   /**
    * @param string $created
    */
-  public function setCreated(string $created): void {
-    $this->created = $created;
-  }
+    public function setCreated(string $created): void
+    {
+        $this->created = $created;
+    }
 
   /**
    * @return string
    */
-  public function getFramework(): string {
-    return $this->framework;
-  }
+    public function getFramework(): string
+    {
+        return $this->framework;
+    }
 
   /**
    * @param string $framework
    */
-  public function setFramework(string $framework): void {
-    $this->framework = $framework;
-  }
+    public function setFramework(string $framework): void
+    {
+        $this->framework = $framework;
+    }
 
   /**
    * @return string
    */
-  public function getRegion(): string {
-    return $this->region;
-  }
+    public function getRegion(): string
+    {
+        return $this->region;
+    }
 
   /**
    * @param string $region
    */
-  public function setRegion(string $region): void {
-    $this->region = $region;
-  }
+    public function setRegion(string $region): void
+    {
+        $this->region = $region;
+    }
 
   /**
    * @return string
    */
-  public function getOrganization(): string {
-    return $this->organization;
-  }
+    public function getOrganization(): string
+    {
+        return $this->organization;
+    }
 
   /**
    * @param string $organization
    */
-  public function setOrganization(string $organization): void {
-    $this->organization = $organization;
-  }
+    public function setOrganization(string $organization): void
+    {
+        $this->organization = $organization;
+    }
 
   /**
    * @return string
    */
-  public function getPlanName(): string {
-    return $this->plan_name;
-  }
+    public function getPlanName(): string
+    {
+        return $this->plan_name;
+    }
 
   /**
    * @param string $plan_name
    */
-  public function setPlanName(string $plan_name): void {
-    $this->plan_name = $plan_name;
-  }
+    public function setPlanName(string $plan_name): void
+    {
+        $this->plan_name = $plan_name;
+    }
 
   /**
    * @return int
    */
-  public function getMaxNumCdes(): int {
-    return $this->max_num_cdes;
-  }
+    public function getMaxNumCdes(): int
+    {
+        return $this->max_num_cdes;
+    }
 
   /**
    * @param int $max_num_cdes
    */
-  public function setMaxNumCdes(int $max_num_cdes): void {
-    $this->max_num_cdes = $max_num_cdes;
-  }
+    public function setMaxNumCdes(int $max_num_cdes): void
+    {
+        $this->max_num_cdes = $max_num_cdes;
+    }
 
   /**
    * @return string
    */
-  public function getUpstream(): string {
-    return $this->upstream;
-  }
+    public function getUpstream(): string
+    {
+        return $this->upstream;
+    }
 
   /**
    * @param string $upstream
    */
-  public function setUpstream(string $upstream): void {
-    $this->upstream = $upstream;
-  }
+    public function setUpstream(string $upstream): void
+    {
+        $this->upstream = $upstream;
+    }
 
   /**
    * @return string
    */
-  public function getHolderType(): string {
-    return $this->holder_type;
-  }
+    public function getHolderType(): string
+    {
+        return $this->holder_type;
+    }
 
   /**
    * @param string $holder_type
    */
-  public function setHolderType(string $holder_type): void {
-    $this->holder_type = $holder_type;
-  }
+    public function setHolderType(string $holder_type): void
+    {
+        $this->holder_type = $holder_type;
+    }
 
   /**
    * @return string
    */
-  public function getHolderId(): string {
-    return $this->holder_id;
-  }
+    public function getHolderId(): string
+    {
+        return $this->holder_id;
+    }
 
   /**
    * @param string $hold_id
    */
-  public function setHolderId(string $holder_id): void {
-    $this->holder_id = $holder_id;
-  }
+    public function setHolderId(string $holder_id): void
+    {
+        $this->holder_id = $holder_id;
+    }
 
   /**
    * @return string
    */
-  public function getOwner(): string {
-    return $this->owner;
-  }
+    public function getOwner(): string
+    {
+        return $this->owner;
+    }
 
   /**
    * @param string $owner
    */
-  public function setOwner(string $owner): void {
-    $this->owner = $owner;
-  }
+    public function setOwner(string $owner): void
+    {
+        $this->owner = $owner;
+    }
 
   /**
    * @return bool
    */
-  public function isFrozen(): bool {
-    return $this->frozen;
-  }
+    public function isFrozen(): bool
+    {
+        return $this->frozen;
+    }
 
   /**
    * @param bool $frozen
    */
-  public function setFrozen(bool $frozen): void {
-    $this->frozen = $frozen;
-  }
+    public function setFrozen(bool $frozen): void
+    {
+        $this->frozen = $frozen;
+    }
 
   /**
    * @return string
    */
-  public function getLastFrozenAt(): string {
-    return $this->last_frozen_at;
-  }
+    public function getLastFrozenAt(): string
+    {
+        return $this->last_frozen_at;
+    }
 
   /**
    * @param string $last_frozen_at
    */
-  public function setLastFrozenAt(?string $last_frozen_at = null): void {
-    $this->last_frozen_at = $last_frozen_at;
-  }
+    public function setLastFrozenAt(?string $last_frozen_at = null): void
+    {
+        $this->last_frozen_at = $last_frozen_at;
+    }
 
 
   /**
    * @return bool
    */
-  public function valid(): bool {
-    $siteinfo = $this->getPantheonSiteInfo($this->getId());
-    foreach($siteinfo as $key => $value) {
-      call_user_func([$this, "set" . str_replace(" ", "", ucwords(str_replace("_", " ", $key))) ], $value);
+    public function valid(): bool
+    {
+        $siteinfo = $this->getPantheonSiteInfo($this->getId());
+        foreach ($siteinfo as $key => $value) {
+            call_user_func([$this, "set" . str_replace(" ", "", ucwords(str_replace("_", " ", $key))) ], $value);
+        }
+        return true;
     }
-    return true;
-  }
-
 }

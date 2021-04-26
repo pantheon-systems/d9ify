@@ -29,6 +29,9 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
+    - name: Lint
+      run: composer code:lint
+
     - name: Run Tests
       run: composer test
 
