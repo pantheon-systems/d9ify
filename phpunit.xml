@@ -6,10 +6,21 @@
          verbose="true"
          cacheDirectory=".phpunit.cache"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="true"
+         stopOnError="true"
+         stopOnFailure="true"
+         stopOnIncomplete="true"
+         stopOnRisky="true"
+         stopOnSkipped="true"
+         stopOnWarning="true"
+         stopOnDefect="true"
+>
   <testsuites>
     <testsuite name="unit">
       <directory>tests/unit</directory>
+    </testsuite>
+    <testsuite name="functional">
+      <directory>tests/functional</directory>
     </testsuite>
   </testsuites>
 

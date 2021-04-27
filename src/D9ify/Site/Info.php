@@ -96,13 +96,13 @@ class Info implements InfoInterface
     public function __construct($site_id = null)
     {
 
-        if ($site_id !== null) {
-            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $site_id) === 1) {
-                $this->setId($site_id);
-            }
-            if (is_string($site_id)) {
-                $this->setName($site_id);
-            }
+        if ($site_id !== null && is_string($site_id)) {
+            (preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+                $site_id
+            ) === 1)
+
+                ? $this->setId($site_id) : $this->setName($site_id);
         }
     }
 

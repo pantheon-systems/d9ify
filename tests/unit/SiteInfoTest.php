@@ -14,7 +14,7 @@ class SiteInfoTest extends TestCase {
   /**
    * @var \ReflectionClass
    */
-  protected $reflector;
+  protected \ReflectionClass $reflector;
 
   /**
    * Set up class Tester

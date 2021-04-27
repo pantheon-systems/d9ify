@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 class DirectoryTest extends TestCase {
 
-  protected $reflector;
+  protected \ReflectionClass $reflector;
 
   protected function setUp(): void
   {

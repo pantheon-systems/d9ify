@@ -36,9 +36,10 @@ class Directory
    *
    * @throws \JsonException
    */
-    public function __construct(Info $site, OutputInterface $output)
+    public function __construct(string | InfoInterface $site, OutputInterface $output)
     {
-        $this->info = $site;
+        $this->setSiteInfo($site);
+
         $this->clonePath = new \SplFileInfo(getcwd() . "/" . $this->info->getName());
         if (!$this->clonePath->isDir()) {
           // -oStrictHostKeyChecking=no
@@ -145,8 +146,12 @@ class Directory
   /**
    * @param \D9ify\Site\Info $info
    */
-    public function setSiteInfo($site_id): void
+    public function setSiteInfo(string | InfoInterface $site_id): void
     {
+        if (is_string($site_id)) {
+            $this->info = new Info($site_id);
+            return;
+        }
         $this->info = new Info($site_id);
     }
 }

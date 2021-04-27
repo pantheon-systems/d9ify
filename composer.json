@@ -9,12 +9,6 @@
             "email": "tom.stovall@pantheon.io"
         }
     ],
-    "repositories": [
-        {
-            "type": "github",
-            "url": "git@github.com:stovak/php-composer-reader.git"
-        }
-    ],
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
@@ -24,23 +18,42 @@
     "require": {
         "symfony/console": "^3.3",
         "composer/composer": "^2",
-        "stovak/php-composer-reader": "dev-master",
         "rogervila/array-diff-multidimensional": "dev-master",
         "phpunit/phpunit": "^10",
-        "squizlabs/php_codesniffer": "^4"
+        "squizlabs/php_codesniffer": "^4",
+        "composer/semver": "^3",
+        "symfony/serializer": "5.x-dev",
+        "justinrainbow/json-schema": "5.x-dev"
     },
+	"suggest": {
+		"ext-zip": "Enabling the zip extension allows you to unzip archives",
+		"ext-zlib": "Allow gzip compression of HTTP requests"
+	},
     "scripts": {
         "d9ify": [
             "\\D9ify\\Application::process"
         ],
         "test": [
-            "vendor/bin/phpunit"
-        ],
+			"@test:unit",
+			"@test:functional"
+		],
+		"test:functional": [
+			"vendor/bin/phpunit --testsuite functional"
+		],
+		"test:unit": [
+			"vendor/bin/phpunit  --testsuite unit"
+		],
         "code:fix": [
             "phpcbf --standard=psr2 src"
         ],
         "code:lint": [
             "vendor/bin/phpcs --standard=psr2 src"
         ]
-    }
+    },
+	"config": {
+		"platform": {
+			"php": "7.4.0"
+		},
+		"platform-check": false
+	}
 }
