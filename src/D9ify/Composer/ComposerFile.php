@@ -243,8 +243,7 @@ class ComposerFile extends JsonFile
     {
         if (isset($this->requirements[$package])
             && $this->requirements[$package] instanceof Requirement) {
-            $this->requirements[$package] = $this->requirements[$package]->isYoungerThan($version) ?
-                $this->requirements[$package] :  new Requirement($package, $version);
+            $this->requirements[$package]->setVersionIfGreater($version);
             return;
         }
         $this->requirements[$package] = new Requirement($package, $version);
@@ -258,7 +257,7 @@ class ComposerFile extends JsonFile
     {
         if (isset($this->devRequirements[$package])
             && $this->devRequirements[$package] instanceof Requirement) {
-            $this->devRequirements[$package] = $this->devRequirements[$package]->isYoungerThan($version) ?
+            $this->devRequirements[$package] = $this->devRequirements[$package]->greaterThan($version) ?
                 $this->devRequirements[$package] :  new Requirement($package, $version);
             return;
         }
@@ -313,7 +312,7 @@ class ComposerFile extends JsonFile
     public static function getSchemaFile(string $schemaFile = null)
     {
         if (null === $schemaFile) {
-            $schemaFile = getcwd() ."/vendor/composer/composer/res/composer-schema.json";
+            $schemaFile = getcwd() . "/vendor/composer/composer/res/composer-schema.json";
         }
 
         // Prepend with file:// only when not using a special schema already (e.g. in the phar)

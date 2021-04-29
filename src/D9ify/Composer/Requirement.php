@@ -43,11 +43,31 @@ class Requirement
     }
 
     /**
+     * @param $incomingVersion
+     *
+     * @return void
+     */
+    public function setVersionIfGreater($incomingVersion): void
+    {
+        $this->version = Comparator::greaterThan($this->version, $incomingVersion) ? $this->version : $incomingVersion;
+    }
+
+    /**
+     * @param $version
+     *
+     * @return bool
+     */
+    public function isGreaterThan($version): bool
+    {
+        return Comparator::greaterThan($this->getVersion(), $version);
+    }
+
+    /**
      * @return string
      */
     public function getVersion(): string
     {
-        return $this->getVersion();
+        return $this->version;
     }
 
     /**
@@ -55,18 +75,8 @@ class Requirement
      *
      * @return bool
      */
-    public function isOlderThan($version): bool
+    public function isLessThan($version): bool
     {
-        return Comparator::greaterThan($this->version, $version);
-    }
-
-    /**
-     * @param $version
-     *
-     * @return bool
-     */
-    public function isYoungerThan($version): bool
-    {
-        return Comparator::lessThan($this->version, $version);
+        return Comparator::lessThan($this->getVersion(), $version);
     }
 }

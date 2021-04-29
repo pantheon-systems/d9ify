@@ -4,6 +4,7 @@
 namespace D9ify\tests\Functional;
 
 
+use Composer\Semver\Comparator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -39,25 +40,33 @@ class ComposerFileFunctionalTest extends TestCase
         $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
         $contents_after = file_get_contents($contents_after_file);
         $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+
+
         $testInstance = $this->reflector->newInstance($contents_before);
         // add a missing package.
         $testInstance->addRequirement("composer/installers", "^1.0.20");
-        $testInstanceArray = $testInstance->__toArray();
+        $comparison = static::diffAssocRecursive($testInstance->__toArray(), $after);
         // diff the result.
         $this->assertEmpty(
-            static::diff_recursive($testInstanceArray, $after),
-            "Adding a single requirement package should generate an exact copy of the result file.");
+            $comparison,
+            "Adding a single requirement package should generate an exact copy of the result file."
+            . print_r($comparison, true));
+
 
         $testAlreadyAdded = $this->reflector->newInstance($contents_after);
         $testAlreadyAdded->addRequirement("composer/installers", "^1.0.20");
+        $comparison2 = static::diffAssocRecursive($testAlreadyAdded->__toArray(), $after);
         $this->assertEmpty(
-            static::diff_recursive((string)$testAlreadyAdded, $after),
-            "Adding a package already included should not change the output.");
+            $comparison2,
+            "Adding a package already included should not change the output."
+            . print_r($comparison2, true));
+
 
         $testOlderVersion = $this->reflector->newInstance($contents_after);
         $testOlderVersion->addRequirement("composer/installers", "^1.0.19");
+        $comparison3 = static::diffAssocRecursive($testAlreadyAdded->__toArray(), $after);
         $this->assertEmpty(
-            static::diff_recursive((string)$testAlreadyAdded, $after),
+            $comparison3,
             "Adding an older version of the existing package " .
             "should generate an identical file and should ignore " .
             "the older version.");
@@ -65,41 +74,68 @@ class ComposerFileFunctionalTest extends TestCase
 
         $testOlderVersion = $this->reflector->newInstance($contents_older);
         $testOlderVersion->addRequirement("composer/installers", "^1.0.22");
-        $item = static::diff_recursive((string)$testAlreadyAdded, $after);
-        throw new \Exception(print_r(static::diff_recursive((string)$testAlreadyAdded, $after), true));
-        $this->assertEmpty(
-            static::diff_recursive((string)$testOlderVersion, $after),
-            "Adding a package newer than existing version should simply update the version.");
+        $comparison4 = static::diffAssocRecursive($testOlderVersion->__toArray(), $after);
 
+        $this->assertArrayHasKey(
+            "require",
+            $comparison4,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
 
-        // add existing package.
-        // Make sure it wasn't added twice.
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $comparison4['require'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
+
+        $this->assertEquals(
+            substr($comparison4['require']['composer/installers'], 0, 2),
+            "^1",
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
+
+        $testOlderVersion->addRequirement("composer/installers", "^4.0");
+        $comparison5 = static::diffAssocRecursive($testOlderVersion->__toArray(), $after);
+
+        $this->assertArrayHasKey(
+            "require",
+            $comparison5,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
+
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $comparison5['require'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
+
+        $this->assertEquals(
+            substr($comparison5['require']['composer/installers'], 0, 2),
+            "^4",
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($comparison4, true));
+
     }
 
-    public static function diff_recursive($array1, $array2)
+    public static function diffAssocRecursive(array $array1, array $array2)
     {
-        $difference = [];
-        foreach ((array)$array1 as $key => $value) {
-            if (is_array($value) && isset($array2[$key])) { // it's an array and both have the key
-                $new_diff = static::diff_recursive($value, $array2[$key]);
-                if (!empty($new_diff)) {
-                    $difference[$key] = $new_diff;
-                } elseif (is_string($value) && !in_array($value, $array2)) {
-                    // the value is a string and it's not in array B
-                    $difference[$key] = $value . " is missing from the second array";
-                } elseif (!is_numeric($key) && !array_key_exists($key, $array2)) {
-                    // the key is not numberic and is missing from array B
-                    $difference[$key] = "Missing from the second array";
-                } elseif (is_string($value) && !in_array($value, $array1)) {
-                    // the value is a string and it's not in array B
-                    $difference[$key] = $value . " is missing from the first array";
-                } elseif (!is_numeric($key) && !array_key_exists($key, $array1)) {
-                    // the key is not numberic and is missing from array B
-                    $difference[$key] = "Missing from the first array";
-                } elseif (array_key_exists($key, $array2) && array_key_exists($key, $array1) && $array1[$key] !== $array2[$key]) {
-                    // The value is not missing from either but differs in value
-                    $difference[$key] = sprintf("Value Different in arrays: %s // %s ", $array1[$key], $array2[$key]);
+        $difference = array();
+        foreach ($array1 as $key => $value) {
+            if (is_array($value)) {
+                if (!array_key_exists($key, $array2) || !is_array($array2[$key])) {
+                    $difference[$key] = $value;
+                } else {
+                    $new_diff = static::diffAssocRecursive($value, $array2[$key]);
+                    if (!empty($new_diff)) {
+                        $difference[$key] = $new_diff;
+                    }
                 }
+            } elseif (!array_key_exists($key, $array2) || $array2[$key] !== $value) {
+                if (strpos($key, "/")) {
+                    $difference[$key] = Comparator::greaterThan($array2[$key], $value) ? $array2[$key] : $value;
+                    continue;
+                }
+                $difference[$key] = $value;
             }
         }
         return $difference;

@@ -193,7 +193,7 @@ class ProcessCommand extends Command
         foreach ($fileList as $key => $file) {
             $package = \json_decode(file_get_contents($file->getRealPath()), true, 10, JSON_THROW_ON_ERROR);
             if (isset($package['name'])) {
-                $libraryName = @array_pop(explode("/", $package['name']));
+                $libraryName = @array_pop(explode(DIRECTORY_SEPARATOR, $package['name']));
                 $toMerge['require']["npm-asset/" . $libraryName] = "^" . $package['version'];
             }
         }
