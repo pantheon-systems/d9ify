@@ -22,8 +22,8 @@
         "phpunit/phpunit": "^10",
         "squizlabs/php_codesniffer": "^4",
         "composer/semver": "^3",
-        "symfony/serializer": "5.x-dev",
-        "justinrainbow/json-schema": "5.x-dev"
+        "symfony/serializer": "^5",
+        "justinrainbow/json-schema": "^5"
     },
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",
