@@ -3,6 +3,7 @@
 namespace D9ify\Composer;
 
 use Composer\Semver\Comparator;
+use JetBrains\PhpStorm\Pure;
 
 /**
  * Class Requirement
@@ -49,7 +50,8 @@ class Requirement
      */
     public function setVersionIfGreater($incomingVersion): void
     {
-        $this->version = Comparator::greaterThan($this->version, $incomingVersion) ? $this->version : $incomingVersion;
+        $this->version = Comparator::compare($this->version, "<", $incomingVersion) ?
+            $incomingVersion : $this->version;
     }
 
     /**
@@ -78,5 +80,13 @@ class Requirement
     public function isLessThan($version): bool
     {
         return Comparator::lessThan($this->getVersion(), $version);
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString() : string
+    {
+        return $this->getVersion();
     }
 }

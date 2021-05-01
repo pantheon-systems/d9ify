@@ -35,109 +35,210 @@ class ComposerFileFunctionalTest extends TestCase
      */
     public function testComposerAddPackage()
     {
-        $contents_older = __DIR__ . '/../fixtures/composer-1-older.json';
         $contents_before = __DIR__ . '/../fixtures/composer-1.json';
-        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
-        $contents_after = file_get_contents($contents_after_file);
-        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
-
-
         $testInstance = $this->reflector->newInstance($contents_before);
         // add a missing package.
         $testInstance->addRequirement("composer/installers", "^1.0.20");
-        $comparison = static::diffAssocRecursive($testInstance->__toArray(), $after);
+        $result = $testInstance->__toArray();
+        $this->assertArrayHasKey("require", $result, "Require array should be set");
+        $this->assertArrayHasKey("composer/installers", $result['require'],
+            "Require array should have composer/installer version");
+
         // diff the result.
-        $this->assertEmpty(
-            $comparison,
+        $this->assertEquals(
+            "^1",
+            substr($result['require']['composer/installers'], 0, 2),
             "Adding a single requirement package should generate an exact copy of the result file."
-            . print_r($comparison, true));
+            . print_r($result, true));
+    }
+    public function testAddExistingPackage() {
 
-
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
         $testAlreadyAdded = $this->reflector->newInstance($contents_after);
         $testAlreadyAdded->addRequirement("composer/installers", "^1.0.20");
-        $comparison2 = static::diffAssocRecursive($testAlreadyAdded->__toArray(), $after);
-        $this->assertEmpty(
-            $comparison2,
-            "Adding a package already included should not change the output."
-            . print_r($comparison2, true));
-
-
-        $testOlderVersion = $this->reflector->newInstance($contents_after);
-        $testOlderVersion->addRequirement("composer/installers", "^1.0.19");
-        $comparison3 = static::diffAssocRecursive($testAlreadyAdded->__toArray(), $after);
-        $this->assertEmpty(
-            $comparison3,
-            "Adding an older version of the existing package " .
-            "should generate an identical file and should ignore " .
-            "the older version.");
-
-
-        $testOlderVersion = $this->reflector->newInstance($contents_older);
-        $testOlderVersion->addRequirement("composer/installers", "^1.0.22");
-        $comparison4 = static::diffAssocRecursive($testOlderVersion->__toArray(), $after);
-
-        $this->assertArrayHasKey(
-            "require",
-            $comparison4,
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
-        $this->assertArrayHasKey(
-            "composer/installers",
-            $comparison4['require'],
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
+        $result = $testAlreadyAdded->__toArray();
         $this->assertEquals(
-            substr($comparison4['require']['composer/installers'], 0, 2),
             "^1",
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
-        $testOlderVersion->addRequirement("composer/installers", "^4.0");
-        $comparison5 = static::diffAssocRecursive($testOlderVersion->__toArray(), $after);
-
-        $this->assertArrayHasKey(
-            "require",
-            $comparison5,
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
-        $this->assertArrayHasKey(
-            "composer/installers",
-            $comparison5['require'],
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
-        $this->assertEquals(
-            substr($comparison5['require']['composer/installers'], 0, 2),
-            "^4",
-            "Adding a package newer than existing version should simply update the version."
-            . print_r($comparison4, true));
-
+            substr($result['require']['composer/installers'], 0, 2),
+            "Adding a single requirement package should generate an exact copy of the result file."
+            . print_r($result, true));
     }
 
-    public static function diffAssocRecursive(array $array1, array $array2)
+    /**
+     * @test
+     *
+     * @throws \JsonException
+     * @throws \ReflectionException
+     */
+    public function testAddSameMajorVersionOfExisting()
     {
-        $difference = array();
-        foreach ($array1 as $key => $value) {
-            if (is_array($value)) {
-                if (!array_key_exists($key, $array2) || !is_array($array2[$key])) {
-                    $difference[$key] = $value;
-                } else {
-                    $new_diff = static::diffAssocRecursive($value, $array2[$key]);
-                    if (!empty($new_diff)) {
-                        $difference[$key] = $new_diff;
-                    }
-                }
-            } elseif (!array_key_exists($key, $array2) || $array2[$key] !== $value) {
-                if (strpos($key, "/")) {
-                    $difference[$key] = Comparator::greaterThan($array2[$key], $value) ? $array2[$key] : $value;
-                    continue;
-                }
-                $difference[$key] = $value;
-            }
-        }
-        return $difference;
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_older = __DIR__ . '/../fixtures/composer-1-older.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+        $testOlderVersion = $this->reflector->newInstance($contents_older);
+        $testOlderVersion->addRequirement("composer/installers", "^1.0.22");
+        $result = $testOlderVersion->__toArray();
+
+        $this->assertArrayHasKey(
+            "require",
+            $result,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $result['require'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertEquals(
+            "^1",
+            substr($result['require']['composer/installers'], 0, 2),
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+    }
+
+    /**
+     * @test
+     * @throws \JsonException
+     * @throws \ReflectionException
+     */
+    public function testAddNewMajorVersionOfExisting()
+    {
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_older = __DIR__ . '/../fixtures/composer-1-older.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+
+        $testOlderVersion = $this->reflector->newInstance($contents_older);
+        $testOlderVersion->addRequirement("composer/installers", "^4.0");
+        $result = $testOlderVersion->__toArray();
+        $this->assertArrayHasKey(
+            "require",
+            $result,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $result['require'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertEquals(
+            "^4",
+            substr($result['require']['composer/installers'], 0, 2),
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+    }
+
+    /**
+     * @test
+     *
+     * @throws \ReflectionException
+     */
+    public function testComposerAddDevPackage()
+    {
+        $contents_before = __DIR__ . '/../fixtures/composer-1.json';
+        $testInstance = $this->reflector->newInstance($contents_before);
+        // add a missing package.
+        $testInstance->addDevRequirement("composer/installers", "^1.0.20");
+        $result = $testInstance->__toArray();
+        $this->assertArrayHasKey("require-dev", $result, "Require array should be set");
+        $this->assertArrayHasKey("composer/installers", $result['require-dev'],
+            "Require array should have composer/installer version");
+
+        // diff the result.
+        $this->assertEquals(
+            "^1",
+            substr($result['require-dev']['composer/installers'], 0, 2),
+            "Adding a single requirement package should generate an exact copy of the result file."
+            . print_r($result, true));
+    }
+    public function testAddExistingDevPackage() {
+
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+        $testAlreadyAdded = $this->reflector->newInstance($contents_after);
+        $testAlreadyAdded->addDevRequirement("composer/installers", "^1.0.20");
+        $result = $testAlreadyAdded->__toArray();
+        $this->assertEquals(
+            "^1",
+            substr($result['require-dev']['composer/installers'], 0, 2),
+            "Adding a single requirement package should generate an exact copy of the result file."
+            . print_r($result, true));
+    }
+
+    /**
+     * @test
+     *
+     * @throws \JsonException
+     * @throws \ReflectionException
+     */
+    public function testAddSameMajorVersionOfExistingDev()
+    {
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_older = __DIR__ . '/../fixtures/composer-1-older.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+        $testOlderVersion = $this->reflector->newInstance($contents_older);
+        $testOlderVersion->addDevRequirement("composer/installers", "^1.0.22");
+        $result = $testOlderVersion->__toArray();
+
+        $this->assertArrayHasKey(
+            "require-dev",
+            $result,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $result['require-dev'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertEquals(
+            "^1",
+            substr($result['require-dev']['composer/installers'], 0, 2),
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+    }
+
+    /**
+     * @test
+     * @throws \JsonException
+     * @throws \ReflectionException
+     */
+    public function testAddNewMajorVersionOfExistingDev()
+    {
+        $contents_after_file = __DIR__ . '/../fixtures/composer-1-result.json';
+        $contents_older = __DIR__ . '/../fixtures/composer-1-older.json';
+        $contents_after = file_get_contents($contents_after_file);
+        $after = json_decode($contents_after, true, 255, JSON_THROW_ON_ERROR);
+
+        $testOlderVersion = $this->reflector->newInstance($contents_older);
+        $testOlderVersion->addDevRequirement("composer/installers", "^4.0");
+        $result = $testOlderVersion->__toArray();
+        $this->assertArrayHasKey(
+            "require-dev",
+            $result,
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertArrayHasKey(
+            "composer/installers",
+            $result['require-dev'],
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
+
+        $this->assertEquals(
+            "^4",
+            substr($result['require-dev']['composer/installers'], 0, 2),
+            "Adding a package newer than existing version should simply update the version."
+            . print_r($result, true));
     }
 }

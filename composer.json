@@ -25,6 +25,9 @@
         "symfony/serializer": "^5",
         "justinrainbow/json-schema": "^5"
     },
+	"require-dev": {
+		"psy/psysh": "@stable"
+	},
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",
 		"ext-zlib": "Allow gzip compression of HTTP requests"

@@ -171,6 +171,25 @@ class ComposerFile extends JsonFile
         $this->original = $this->read();
     }
 
+    /**
+     * @return array
+     */
+    public function getRequire(): array {
+        return array_combine(array_keys($this->requirements), array_map(function($item) {
+            return (string) $item;
+        }, $this->requirements));
+    }
+
+    /**
+     * @return array
+     */
+    public function getRequireDev(): array {
+        return array_combine(array_keys($this->devRequirements), array_map(function($item) {
+            return (string) $item;
+        }, $this->devRequirements));
+    }
+
+
 
     /**
      * @return bool|void
