@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bb18877d33e0513704f5353452366f0b",
+    "content-hash": "cbeb5b41731d5fe5baf72d8675664d12",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -89,12 +89,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/composer.git",
-                "reference": "4842f213a1e1eee0502d5afb98ef37ff2463c562"
+                "reference": "bfea0f7d1e991f237ccf448b0a0d24ede02d923a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/composer/zipball/4842f213a1e1eee0502d5afb98ef37ff2463c562",
-                "reference": "4842f213a1e1eee0502d5afb98ef37ff2463c562",
+                "url": "https://api.github.com/repos/composer/composer/zipball/bfea0f7d1e991f237ccf448b0a0d24ede02d923a",
+                "reference": "bfea0f7d1e991f237ccf448b0a0d24ede02d923a",
                 "shasum": ""
             },
             "require": {
@@ -180,7 +180,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-04-30T08:07:28+00:00"
+            "time": "2021-05-02T14:50:42+00:00"
         },
         {
             "name": "composer/metadata-minifier",
@@ -2705,7 +2705,7 @@
             "description": "Provides tools to ease debugging PHP code",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/debug/tree/4.4"
+                "source": "https://github.com/symfony/debug/tree/v4.4.22"
             },
             "funding": [
                 {
@@ -3630,10 +3630,12 @@
     },
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "php": ">=8.0.0"
+    },
     "platform-dev": [],
     "platform-overrides": {
-        "php": "7.4.0"
+        "php": "8.0.0"
     },
     "plugin-api-version": "2.0.0"
 }
