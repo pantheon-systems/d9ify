@@ -3,7 +3,6 @@
 
 namespace D9ify\Utility;
 
-
 /**
  * Class JsonFile
  * @package D9ify\Utility
@@ -31,8 +30,7 @@ class JsonFile extends \SplFileObject
         $openMode = "r",
         $use_include_path = false,
         $context = null
-    )
-    {
+    ) {
         parent::__construct($filename, $openMode, getcwd(), $context);
         if ($this->isFile() && $this->valid()) {
             $this->original = $this->read();
@@ -151,6 +149,4 @@ class JsonFile extends \SplFileObject
     {
         return "get" . str_replace(" ", "", (ucwords(str_replace("-", " ", $property))));
     }
-
-
 }

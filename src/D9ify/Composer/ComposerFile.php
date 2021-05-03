@@ -117,8 +117,7 @@ class ComposerFile extends JsonFile
         $use_include_path = false,
         $context = null,
         IOInterface $io = null
-    )
-    {
+    ) {
         parent::__construct($filename, $openMode, $use_include_path, $context);
         $this->io = $io;
     }
@@ -127,14 +126,16 @@ class ComposerFile extends JsonFile
     /**
      * @param array $values
      */
-    public function setRequire(array $values) {
+    public function setRequire(array $values)
+    {
         $this->requirements = $values;
     }
 
     /**
      * @param array $values
      */
-    public function setRequireDev(array $values) {
+    public function setRequireDev(array $values)
+    {
         $this->devRequirements = $values;
     }
 
@@ -298,5 +299,4 @@ class ComposerFile extends JsonFile
     {
         $this->io = $io;
     }
-
 }
