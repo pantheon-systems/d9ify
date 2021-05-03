@@ -77,28 +77,15 @@ class Directory
    */
     public function setComposerFile()
     {
-        $this->composerFile = new ComposerFile(sprintf("%s/%s/composer.json", getcwd(), $this->info->getName()));
+        $this->composerFile = new ComposerFile($this->getComposerFileExpectedPath());
     }
 
   /**
    * @return \D9ify\Site\ComposerFile
    */
-    public function getComposerObject(): ComposerFile
+    public function &getComposerObject(): ComposerFile
     {
         return $this->composerFile;
-    }
-
-  /**
-   * @param $site_id
-   *
-   * @return mixed
-   * @throws \JsonException
-   */
-    public function getComposerFileAsArray($site_id)
-    {
-        $composerFile = $this->getComposerFile();
-        return json_decode($composerFile->valid() ?
-        file_get_contents($composerFile->getRealPath()) : "{}", true, 512, JSON_THROW_ON_ERROR);
     }
 
 
@@ -152,6 +139,11 @@ class Directory
             $this->info = new Info($site_id);
             return;
         }
-        $this->info = new Info($site_id);
+        $this->info = $site_id;
+    }
+
+    private function getComposerFileExpectedPath()
+    {
+        return sprintf("%s/%s/composer.json", getcwd(), $this->info->getName());
     }
 }

@@ -3,9 +3,9 @@
 namespace D9ify\Composer;
 
 use Composer\IO\IOInterface;
-use Composer\Json\JsonFile;
-use Composer\Util\HttpDownloader;
-use Symfony\Component\Console\Output\OutputInterface;
+use D9ify\Utility\JsonFile;
+use Exception;
+use Rogervila\ArrayDiffMultidimensional;
 use JsonSchema\Validator;
 
 /**
@@ -72,8 +72,6 @@ class ComposerFile extends JsonFile
      * @var
      */
     protected $includePath;
-
-
     /**
      * @var array
      */
@@ -100,9 +98,9 @@ class ComposerFile extends JsonFile
     protected array $suggest = [];
 
     /**
-     * @var array
+     * @var IOInterface|null
      */
-    protected array $original = [];
+    protected ?IOInterface $io;
 
     /**
      * ComposerFile constructor.
@@ -112,70 +110,40 @@ class ComposerFile extends JsonFile
      * @param false $useIncludePath
      * @param null $context
      *
-     * @throws JsonException
      */
     public function __construct(
         $filename,
-        HttpDownloader $httpDownloader = null,
+        $openMode = "r",
+        $use_include_path = false,
+        $context = null,
         IOInterface $io = null
-    ) {
-        parent::__construct($filename, $httpDownloader, $io);
-        if ($this->exists()) {
-            $this->setOriginal();
-            $this->parseOriginal();
-        }
+    )
+    {
+        parent::__construct($filename, $openMode, $use_include_path, $context);
+        $this->io = $io;
     }
 
 
     /**
-     *
+     * @param array $values
      */
-    public function parseOriginal()
-    {
-        foreach ($this->original as $key => $value) {
-            $this->{$this->normalizeComposerPropertyToSetterName($key)}($value);
-        }
+    public function setRequire(array $values) {
+        $this->requirements = $values;
     }
 
     /**
-     * @param $property
-     * @return string
+     * @param array $values
      */
-    public static function normalizeComposerPropertyToSetterName($property)
-    {
-        return "set" . str_replace(" ", "", (ucwords(str_replace("-", " ", $property))));
-    }
-
-    /**
-     * @param $property
-     * @return string
-     */
-    public static function normalizeComposerPropertyToGetterName($property)
-    {
-        return "get" . str_replace(" ", "", (ucwords(str_replace("-", " ", $property))));
+    public function setRequireDev(array $values) {
+        $this->devRequirements = $values;
     }
 
     /**
      * @return array
      */
-    public function getOriginal()
+    public function getRequire(): array
     {
-        return $this->original;
-    }
-
-    /**
-     * @throws JsonException
-     */
-    public function setOriginal()
-    {
-        $this->original = $this->read();
-    }
-
-    /**
-     * @return array
-     */
-    public function getRequire(): array {
-        return array_combine(array_keys($this->requirements), array_map(function($item) {
+        return array_combine(array_keys($this->requirements), array_map(function ($item) {
             return (string) $item;
         }, $this->requirements));
     }
@@ -183,8 +151,9 @@ class ComposerFile extends JsonFile
     /**
      * @return array
      */
-    public function getRequireDev(): array {
-        return array_combine(array_keys($this->devRequirements), array_map(function($item) {
+    public function getRequireDev(): array
+    {
+        return array_combine(array_keys($this->devRequirements), array_map(function ($item) {
             return (string) $item;
         }, $this->devRequirements));
     }
@@ -207,16 +176,12 @@ class ComposerFile extends JsonFile
      * @return bool|void
      * @throws \Seld\JsonLint\ParsingException
      */
-    public function validateSchema($schema = self::STRICT_SCHEMA, $schemaFile = null)
+    public function validateSchema()
     {
-        $data = (string) $this;
-        if (null === $data && 'null' !== $content) {
-            self::validateSyntax($content, $this->getPath());
-        }
         $schema = static::getSchema();
         $schema->additionalProperties = true;
         $validator = new Validator();
-        $validator->check($data, $schema);
+        return $validator->check($this->__toArray(), $schema);
     }
 
     /**
@@ -224,7 +189,7 @@ class ComposerFile extends JsonFile
      */
     public function getDiff()
     {
-        throw new Exception("TODO: create this function");
+        return ArrayDiffMultidimensional::compare($this->original, $this->__toArray());
     }
 
     /**
@@ -238,7 +203,7 @@ class ComposerFile extends JsonFile
             $array_value = call_user_func([
                 $this,
                 $this->normalizeComposerPropertyToGetterName($key)
-            ], [$key, $value]);
+            ]);
             if (!empty($array_value)) {
                 $toReturn[$key] = $array_value;
             }
@@ -251,7 +216,7 @@ class ComposerFile extends JsonFile
      */
     public function __toString(): string
     {
-        return json_encode($this->__toArray(), JSON_PRETTY_PRINT);
+        return json_encode($this->__toArray(), JSON_PRETTY_PRINT) ?? "{}";
     }
 
     /**
@@ -284,42 +249,9 @@ class ComposerFile extends JsonFile
     }
 
     /**
-     * @param string $name
-     * @param array $arguments
-     * @return mixed
-     * @throws \Exception
+     * @return null|array
      */
-    public function __call(string $name, array $arguments)
-    {
-        $varName = lcfirst(substr($name, 3));
-        switch (substr($name, 0, 3)) {
-            case "set":
-                if ($varName == "require") {
-                    foreach ($arguments[0] as $key => $value) {
-                        $this->addRequirement($key, $value);
-                    }
-                }
-                if ($varName == "requireDev") {
-                    foreach ($arguments[0] as $key => $value) {
-                        $this->addDevRequirement($key, $value);
-                    }
-                }
-                $this->{$varName} = $arguments[0];
-                break;
-            case "get":
-                return $this->{$varName} ?? null;
-
-                break;
-
-            default:
-                throw new \Exception('cannot set requested property');
-        }
-    }
-
-    /**
-     * @return null[]|string[]
-     */
-    public static function getSchemaRef()
+    public static function getSchemaRef(): array
     {
         return ['$ref' => static::getSchemaFile()];
     }
@@ -351,4 +283,20 @@ class ComposerFile extends JsonFile
     {
         return json_decode(file_get_contents(static::getSchemaFile()), false, 512, JSON_THROW_ON_ERROR);
     }
+    /**
+     * @return IOInterface|null
+     */
+    public function getIo(): ?IOInterface
+    {
+        return $this->io;
+    }
+
+    /**
+     * @param IOInterface|null $io
+     */
+    public function setIo(?IOInterface $io): void
+    {
+        $this->io = $io;
+    }
+
 }
