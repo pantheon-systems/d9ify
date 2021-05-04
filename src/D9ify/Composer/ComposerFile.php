@@ -2,11 +2,15 @@
 
 namespace D9ify\Composer;
 
+use Composer\Config;
 use Composer\IO\IOInterface;
+use Composer\Repository\RepositoryFactory;
+use Composer\Repository\RepositoryManager;
+use Composer\Util\HttpDownloader;
 use D9ify\Utility\JsonFile;
 use Exception;
-use Rogervila\ArrayDiffMultidimensional;
 use JsonSchema\Validator;
+use Rogervila\ArrayDiffMultidimensional;
 
 /**
  * Class ComposerFile
@@ -32,6 +36,10 @@ class ComposerFile extends JsonFile
      * @var string|null
      */
     protected ?string $type = null;
+    /**
+     * @var Config
+     */
+    protected Config $config;
     /**
      * @var array
      */
@@ -92,15 +100,21 @@ class ComposerFile extends JsonFile
      * @var array
      */
     protected array $provide = [];
+
+    /**
+     * @var array
+     */
+    protected array $extra = [];
+
     /**
      * @var array
      */
     protected array $suggest = [];
 
     /**
-     * @var IOInterface|null
+     * @var array
      */
-    protected ?IOInterface $io;
+    protected ?RepositoryManager $rm;
 
     /**
      * ComposerFile constructor.
@@ -118,82 +132,8 @@ class ComposerFile extends JsonFile
         $context = null,
         IOInterface $io = null
     ) {
-        parent::__construct($filename, $openMode, $use_include_path, $context);
-        $this->io = $io;
-    }
-
-
-    /**
-     * @param array $values
-     */
-    public function setRequire(array $values)
-    {
-        $this->requirements = $values;
-    }
-
-    /**
-     * @param array $values
-     */
-    public function setRequireDev(array $values)
-    {
-        $this->devRequirements = $values;
-    }
-
-    /**
-     * @return array
-     */
-    public function getRequire(): array
-    {
-        return array_combine(array_keys($this->requirements), array_map(function ($item) {
-            return (string) $item;
-        }, $this->requirements));
-    }
-
-    /**
-     * @return array
-     */
-    public function getRequireDev(): array
-    {
-        return array_combine(array_keys($this->devRequirements), array_map(function ($item) {
-            return (string) $item;
-        }, $this->devRequirements));
-    }
-
-
-
-    /**
-     * @return bool|void
-     * @throws \Composer\Json\JsonValidationException
-     * @throws \Seld\JsonLint\ParsingException
-     */
-    public function valid()
-    {
-        return $this->validateSchema();
-    }
-
-    /**
-     * @param int $schema
-     * @param null $schemaFile
-     * @return bool
-     * @throws \Seld\JsonLint\ParsingException
-     */
-    public function validateSchema(): bool
-    {
-        $schema = static::getSchema();
-        $schema->additionalProperties = true;
-        $validator = new Validator();
-        return $validator->check($this->__toArray(), $schema) ?? false;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function getDiff()
-    {
-        return array_merge_recursive(
-            ArrayDiffMultidimensional::compare($this->getOriginal(), $this->__toArray()),
-            ArrayDiffMultidimensional::compare($this->__toArray(), $this->getOriginal())
-        );
+        parent::__construct($filename, $openMode, $use_include_path, $context, $io);
+        $this->configInit();
     }
 
     /**
@@ -212,7 +152,7 @@ class ComposerFile extends JsonFile
                 $toReturn[$key] = $array_value;
             }
         }
-        return $toReturn;
+        return array_merge($toReturn, $this->getConfig()->raw());
     }
 
     /**
@@ -224,32 +164,42 @@ class ComposerFile extends JsonFile
     }
 
     /**
-     * @param $package
-     * @param $version
+     *
      */
-    public function addRequirement($package, $version)
+    public function configInit()
     {
-        if (isset($this->requirements[$package])
-            && $this->requirements[$package] instanceof Requirement) {
-            $this->requirements[$package]->setVersionIfGreater($version);
-            return;
+        $this->config = new Config();
+        $this->getConfig()->setConfigSource(
+            new Config\JsonConfigSource(
+                new \Composer\Json\JsonFile($this->getRealPath())
+            )
+        );
+        $this->config->merge($this->getOriginal());
+        if ($this->getIo()->isDebug()) {
+            $this->io->info("INFO:" . print_r($this, true));
         }
-        $this->requirements[$package] = new Requirement($package, $version);
     }
 
     /**
-     * @param $package
-     * @param $version
+     * @return Config
      */
-    public function addDevRequirement($package, $version) : void
+    public function getConfig(): Config
     {
-        if (isset($this->devRequirements[$package])
-            && $this->devRequirements[$package] instanceof Requirement) {
-            $this->devRequirements[$package] = $this->devRequirements[$package]->greaterThan($version) ?
-                $this->devRequirements[$package] :  new Requirement($package, $version);
-            return;
+        if (!isset($this->config)) {
+            $this->configInit();
         }
-        $this->devRequirements[$package] = new Requirement($package, $version);
+        return $this->config;
+    }
+
+    /**
+     * @param Config $config
+     */
+    public function setConfig($values): void
+    {
+        if (!isset($this->config)) {
+            $this->configInit();
+        }
+        $this->config->merge($values);
     }
 
     /**
@@ -279,6 +229,66 @@ class ComposerFile extends JsonFile
     }
 
     /**
+     * @param array $values
+     */
+    public function setRequire(array $values)
+    {
+        $this->requirements = $values;
+    }
+
+    /**
+     * @param array $values
+     */
+    public function setRequireDev(array $values)
+    {
+        $this->devRequirements = $values;
+    }
+
+    /**
+     * @return array
+     */
+    public function getRequire(): array
+    {
+        return array_combine(array_keys($this->requirements), array_map(function ($item) {
+            return (string)$item;
+        }, $this->requirements));
+    }
+
+    /**
+     * @return array
+     */
+    public function getRequireDev(): array
+    {
+        return array_combine(array_keys($this->devRequirements), array_map(function ($item) {
+            return (string)$item;
+        }, $this->devRequirements));
+    }
+
+    /**
+     * @return bool|void
+     * @throws \Composer\Json\JsonValidationException
+     * @throws \Seld\JsonLint\ParsingException
+     */
+    public function valid()
+    {
+        return $this->validateSchema();
+    }
+
+    /**
+     * @param int $schema
+     * @param null $schemaFile
+     * @return bool
+     * @throws \Seld\JsonLint\ParsingException
+     */
+    public function validateSchema(): bool
+    {
+        $schema = static::getSchema();
+        $schema->additionalProperties = true;
+        $validator = new Validator();
+        return $validator->check($this->__toArray(), $schema) ?? false;
+    }
+
+    /**
      * @param string|null $schemaFile
      * @return \stdClass
      * @throws \JsonException
@@ -287,19 +297,81 @@ class ComposerFile extends JsonFile
     {
         return json_decode(file_get_contents(static::getSchemaFile()), false, 512, JSON_THROW_ON_ERROR);
     }
+
+
+
     /**
-     * @return IOInterface|null
+     * @throws Exception
      */
-    public function getIo(): ?IOInterface
+    public function getDiff()
     {
-        return $this->io;
+        return array_merge_recursive(
+            ArrayDiffMultidimensional::compare($this->getOriginal(), $this->__toArray()),
+            ArrayDiffMultidimensional::compare($this->__toArray(), $this->getOriginal())
+        );
     }
 
     /**
-     * @param IOInterface|null $io
+     * @param $package
+     * @param $version
      */
-    public function setIo(?IOInterface $io): void
+    public function addRequirement($package, $version)
     {
-        $this->io = $io;
+        if (isset($this->requirements[$package])
+            && $this->requirements[$package] instanceof Requirement) {
+            $this->requirements[$package]->setVersionIfGreater($version);
+            return;
+        }
+        $this->requirements[$package] = new Requirement($package, $version);
+    }
+
+    /**
+     * @param $package
+     * @param $version
+     */
+    public function addDevRequirement($package, $version): void
+    {
+        if (isset($this->devRequirements[$package])
+            && $this->devRequirements[$package] instanceof Requirement) {
+            $this->devRequirements[$package] = $this->devRequirements[$package]->greaterThan($version) ?
+                $this->devRequirements[$package] : new Requirement($package, $version);
+            return;
+        }
+        $this->devRequirements[$package] = new Requirement($package, $version);
+    }
+
+    /**
+     * @param string $property
+     * @return \stdClass|array
+     */
+    public function getExtraProperty(string $property): \stdClass|array
+    {
+        return $this->extra[$property] ?? [];
+    }
+
+    /**
+     * @param string $property
+     * @param \stdClass|array $value
+     */
+    public function setExtraProperty(string $property, \stdClass|array $value)
+    {
+        $this->extra[$property] = $value;
+    }
+
+
+    /**
+     * @param $values
+     */
+    public function setRepositories(array $values)
+    {
+        $this->getConfig()->merge(['config' => ['repositories' => $values]]);
+    }
+
+    /**
+     * @return array
+     */
+    public function getRepositories(): array
+    {
+        return $this->getConfig()->raw()['repositories'];
     }
 }

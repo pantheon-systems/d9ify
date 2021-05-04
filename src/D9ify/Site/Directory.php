@@ -14,36 +14,36 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Directory
 {
 
-  /**
-   * @var \D9ify\Site\Info
-   */
+    /**
+     * @var \D9ify\Site\Info
+     */
     protected $info;
 
-  /**
-   * @var \SplFileInfo
-   */
+    /**
+     * @var \SplFileInfo
+     */
     protected $clonePath;
 
-  /**
-   * @var
-   */
+    /**
+     * @var
+     */
     protected $composerFile;
 
-  /**
-   * Directory constructor.
-   *
-   * @param \D9ify\Site\Info $site
-   * @param \Symfony\Component\Console\Output\OutputInterface $output
-   *
-   * @throws \JsonException
-   */
-    public function __construct(string | InfoInterface $site, OutputInterface $output)
+    /**
+     * Directory constructor.
+     *
+     * @param \D9ify\Site\Info $site
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @throws \JsonException
+     */
+    public function __construct(string|InfoInterface $site, OutputInterface $output)
     {
         $this->setSiteInfo($site);
 
         $this->clonePath = new \SplFileInfo(getcwd() . "/" . $this->info->getName());
         if (!$this->clonePath->isDir()) {
-          // -oStrictHostKeyChecking=no
+            // -oStrictHostKeyChecking=no
             $output->writeln(sprintf("Local copy of site  %s does not exist... cloning...", $this->info->getName()));
             $command = sprintf("terminus connection:info %s.dev --format=json", $this->info->getName());
             exec($command, $result, $status);
@@ -60,53 +60,59 @@ class Directory
         $this->setComposerFile();
     }
 
-
-  /**
-   * @param \D9ify\Site\Info $site
-   * @param \Symfony\Component\Console\Output\OutputInterface $output
-   *
-   * @return static
-   * @throws \JsonException
-   */
-    public static function ensure(string $site, OutputInterface $output)
+    /**
+     * @param string|InfoInterface $site_id
+     */
+    public function setSiteInfo(string|InfoInterface $site_id): void
     {
-        return new static(new Info($site), $output);
+        if (is_string($site_id)) {
+            $this->info = new Info($site_id);
+            return;
+        }
+        $this->info = $site_id;
     }
 
-  /**
-   * @throws \Exception
-   */
+    /**
+     * @throws \Exception
+     */
     public function setComposerFile()
     {
         $this->composerFile = new ComposerFile($this->getComposerFileExpectedPath());
     }
 
-  /**
-   * @return \D9ify\Site\ComposerFile
-   */
+    /**
+     * @return string
+     */
+    private function getComposerFileExpectedPath()
+    {
+        return sprintf("%s/%s/composer.json", getcwd(), $this->info->getName());
+    }
+
+    /**
+     * @param \D9ify\Site\Info $site
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return static
+     * @throws \JsonException
+     */
+    public static function ensure(string $site, OutputInterface $output)
+    {
+        return new static(new Info($site), $output);
+    }
+
+    /**
+     * @return \D9ify\Site\ComposerFile
+     */
     public function &getComposerObject(): ComposerFile
     {
         return $this->composerFile;
     }
 
-
-  /**
-   * @param $done
-   * @param $total
-   */
-    protected function progressBar($done, $total, OutputInterface $output)
-    {
-        $perc = floor(($done / $total) * 100);
-        $left = 100 - $perc;
-        $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
-        $output->write($write);
-    }
-
-  /**
-   * @param $regex
-   *
-   * @return array
-   */
+    /**
+     * @param $regex
+     *
+     * @return array
+     */
     public function spelunkFilesFromRegex($regex, OutputInterface $output)
     {
         $output->writeln(sprintf("Searching files for regex: %s", $regex));
@@ -124,13 +130,27 @@ class Directory
     }
 
     /**
+     * @param $done
+     * @param $total
+     */
+    protected function progressBar($done, $total, OutputInterface $output)
+    {
+        $perc = floor(($done / $total) * 100);
+        $left = 100 - $perc;
+        $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
+        $output->write($write);
+    }
+
+    /**
      * @param OutputInterface $output
      * @return int
      * @throws \Exception
      */
     public function install(OutputInterface $output)
     {
-        $command = sprintf("cd %s && composer install", $this->clonePath);
+        is_file($this->clonePath . "/composer.lock") ? unlink($this->clonePath . "/composer.lock") : [];
+        static::delTree($this->clonePath . "/vendor");
+        $command = sprintf("cd %s && composer upgrade --with-dependencies", $this->clonePath);
         passthru($command, $result);
         if ($result !== 0) {
             throw new ComposerInstallException($result, $output);
@@ -138,31 +158,26 @@ class Directory
         return $result;
     }
 
-  /**
-   * @return \D9ify\Site\Info
-   */
-    public function getSiteInfo(): Info
+    /**
+     * @param $dir
+     * @return bool Success/Failure.
+     */
+    public static function delTree($dir): bool
     {
-        return $this->info;
-    }
-
-  /**
-   * @param \D9ify\Site\Info $info
-   */
-    public function setSiteInfo(string | InfoInterface $site_id): void
-    {
-        if (is_string($site_id)) {
-            $this->info = new Info($site_id);
-            return;
-        }
-        $this->info = $site_id;
+        if (is_dir($dir)) {
+            $files = array_diff(scandir($dir), array('.', '..'));
+            foreach ($files as $file) {
+                (is_dir("$dir/$file")) ? static::delTree("$dir/$file") : unlink("$dir/$file");
+            }
+            return rmdir($dir);
+        } return true;
     }
 
     /**
-     * @return string
+     * @return \D9ify\Site\Info
      */
-    private function getComposerFileExpectedPath()
+    public function getSiteInfo(): Info
     {
-        return sprintf("%s/%s/composer.json", getcwd(), $this->info->getName());
+        return $this->info;
     }
 }

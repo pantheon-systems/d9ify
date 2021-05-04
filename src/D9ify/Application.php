@@ -13,6 +13,7 @@ class Application extends SymfApp
         $arguments = $event->getArguments();
         $site_id = sprintf("%s", end($arguments));
         $process = new ProcessCommand();
+        $process->setComposerIOInterface($event->getIO());
         $GLOBALS['app'] = new static();
         $GLOBALS['app']->add($process);
         $GLOBALS['app']->setDefaultCommand($process->getName(), true);

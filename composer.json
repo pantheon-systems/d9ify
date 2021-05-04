@@ -42,10 +42,10 @@
 			"@test:functional"
 		],
 		"test:functional": [
-			"vendor/bin/phpunit --testsuite functional"
+			"vendor/bin/phpunit --testsuite functional --debug"
 		],
 		"test:unit": [
-			"vendor/bin/phpunit  --testsuite unit"
+			"vendor/bin/phpunit  --testsuite unit --debug"
 		],
         "code:fix": [
             "phpcbf -q --standard=psr2 src"
@@ -55,7 +55,7 @@
         ],
 		"pre-commit": [
 			"composer validate --strict",
-			"composer update",
+			"composer update --with-dependencies",
 			"@code:fix",
 			"@code:lint",
 			"@test"

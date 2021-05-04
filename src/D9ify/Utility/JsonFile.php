@@ -3,6 +3,9 @@
 
 namespace D9ify\Utility;
 
+use Composer\IO\BufferIO;
+use Composer\IO\IOInterface;
+
 /**
  * Class JsonFile
  * @package D9ify\Utility
@@ -14,7 +17,10 @@ class JsonFile extends \SplFileObject
      * @var string
      */
     private string $original;
-
+    /**
+     * @var IOInterface|null
+     */
+    protected ?IOInterface $io;
 
     /**
      * ComposerFile constructor.
@@ -29,13 +35,31 @@ class JsonFile extends \SplFileObject
         $filename,
         $openMode = "r",
         $use_include_path = false,
-        $context = null
+        $context = null,
+        IOInterface $io = null
     ) {
         parent::__construct($filename, $openMode, getcwd(), $context);
-        if ($this->isFile() && $this->valid()) {
+        $this->setIo($io ?? new BufferIO());
+        if ($this->isFile()) {
             $this->original = $this->read();
             $this->unserialize($this->original);
         }
+    }
+
+    /**
+     * @return IOInterface|null
+     */
+    public function getIo(): ?IOInterface
+    {
+        return $this->io;
+    }
+
+    /**
+     * @param IOInterface|null $io
+     */
+    public function setIo(IOInterface $io): void
+    {
+        $this->io = $io;
     }
 
     /**

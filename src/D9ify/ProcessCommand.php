@@ -2,6 +2,7 @@
 
 namespace D9ify;
 
+use Composer\IO\IOInterface;
 use D9ify\Exceptions\D9ifyExceptionBase;
 use D9ify\Site\Directory;
 use Symfony\Component\Console\Command\Command;
@@ -38,6 +39,9 @@ class ProcessCommand extends Command
         "* The guide to use this file is in /README.md                                 *",
         "*******************************************************************************",
     ];
+
+    protected ?IOInterface $composerIOInterface = null;
+
     /**
      * @var string
      */
@@ -231,16 +235,17 @@ class ProcessCommand extends Command
                 $composerFile->addRequirement("npm-asset/" . $libraryName, "^" . $package['version']);
             }
         }
-        $extra = $composerFile->getExtra();
-        if (!isset($extra['installer-paths']['web/libraries/{$name}'])) {
-            $extra['installer-paths']['web/libraries/{$name}'] = [];
+        $installPaths = $composerFile->getExtraProperty('installer-paths');
+        if (!isset($installPaths['web/libraries/{$name}'])) {
+            $installPaths['web/libraries/{$name}'] = [];
         }
-        $extra['installer-paths']['web/libraries/{$name}'] = array_unique(
-            array_merge($extra['installer-paths']['web/libraries/{$name}'], [
+        $installPaths['web/libraries/{$name}'] = array_unique(
+            array_merge($installPaths['web/libraries/{$name}'] ?? [], [
                 "type:bower-asset",
                 "type:npm-asset",
             ])
         );
+        $composerFile->setExtraProperty('installer-paths', $installPaths);
         $output->write(PHP_EOL);
         $output->write(PHP_EOL);
         $output->writeln([
@@ -280,5 +285,21 @@ class ProcessCommand extends Command
         }
         $output->writeln("The composer Files were not changed");
         return 0;
+    }
+
+    /**
+     * @return IOInterface|null
+     */
+    public function getComposerIOInterface(): ?IOInterface
+    {
+        return $this->composerIOInterface;
+    }
+
+    /**
+     * @param IOInterface $composerIOInterface
+     */
+    public function setComposerIOInterface(IOInterface $composerIOInterface): void
+    {
+        $this->composerIOInterface = $composerIOInterface;
     }
 }
