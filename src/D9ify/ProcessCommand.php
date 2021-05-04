@@ -2,6 +2,7 @@
 
 namespace D9ify;
 
+use D9ify\Exceptions\D9ifyExceptionBase;
 use D9ify\Site\Directory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -99,23 +100,48 @@ class ProcessCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln(static::$HELP_TEXT);
-        $this->setSourceDirectory(
-            Directory::ensure(
-                $input->getArgument('source'),
-                $output
-            )
-        );
-        $this->setDestinationDirectory(
-            Directory::ensure(
-                $input->getArgument('destination') ??
-                $this->sourceDirectory->getSiteInfo()->getName() . "-" . date('Y'),
-                $output
-            )
-        );
-        $this->updateDestModulesAndThemesFromSource($input, $output);
-        $this->updateDestEsLibrariesFromSource($input, $output);
-        return $this->endWrite($input, $output);
+        try {
+            $output->writeln(static::$HELP_TEXT);
+            $this->setSourceDirectory(
+                Directory::ensure(
+                    $input->getArgument('source'),
+                    $output
+                )
+            );
+            $this->setDestinationDirectory(
+                Directory::ensure(
+                    $input->getArgument('destination') ??
+                    $this->sourceDirectory->getSiteInfo()->getName() . "-" . date('Y'),
+                    $output
+                )
+            );
+            $this->updateDestModulesAndThemesFromSource($input, $output);
+            $this->updateDestEsLibrariesFromSource($input, $output);
+            $this->writeComposer($input, $output);
+            $this->getDestinationDirectory()->install($output);
+            // TODO:
+            // 1. Copy Custom code
+            // 1. Spelunk custom code and fix module version numbers if necessary.
+            // 1. Copy config files
+            // 1. commit-push code additions
+            // 1. Rsync remote files to local directory
+            // 1. Rsync remote files back up to new site
+            // 1. Download database backup
+            // 1.
+        } catch (D9ifyExceptionBase $d9ifyException) {
+            // TODO: Composer install exception help text
+            $output->writeln((string) $d9ifyException);
+            exit(1);
+        } catch (\Exception $e) {
+            // TODO: General help text and how to restart the process
+            $output->write("Script ended in Exception state." . $e->getMessage());
+            exit(1);
+        } catch (\Throwable $t) {
+            // TODO: General help text and how to restart the process
+            $output->write("Script ended in error state." . $t->getMessage());
+            exit(1);
+        }
+        exit(0);
     }
 
     /**
@@ -213,7 +239,7 @@ class ProcessCommand extends Command
      *
      * @return int|mixed
      */
-    protected function endWrite(InputInterface $input, OutputInterface $output)
+    protected function writeComposer(InputInterface $input, OutputInterface $output)
     {
         $output->writeln([
             "*********************************************************************",

@@ -3,6 +3,7 @@
 namespace D9ify\Site;
 
 use D9ify\Composer\ComposerFile;
+use D9ify\Exceptions\ComposerInstallException;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -122,6 +123,20 @@ class Directory
         });
     }
 
+    /**
+     * @param OutputInterface $output
+     * @return int
+     * @throws \Exception
+     */
+    public function install(OutputInterface $output) {
+        $command = sprintf("cd %s && composer install", $this->clonePath);
+        passthru($command, $result);
+        if ($result !== 0) {
+            throw new ComposerInstallException($result, $output);
+        }
+        return $result;
+    }
+
   /**
    * @return \D9ify\Site\Info
    */
@@ -142,6 +157,9 @@ class Directory
         $this->info = $site_id;
     }
 
+    /**
+     * @return string
+     */
     private function getComposerFileExpectedPath()
     {
         return sprintf("%s/%s/composer.json", getcwd(), $this->info->getName());
