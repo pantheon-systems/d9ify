@@ -74,9 +74,9 @@ class JsonFile extends \SplFileObject
     /**
      * @return string|null
      */
-    public function getOriginal(): ?string
+    public function getOriginal(): ?array
     {
-        return $this->original;
+        return json_decode($this->original, true) ?? [];
     }
 
     /**
@@ -97,7 +97,7 @@ class JsonFile extends \SplFileObject
                 break;
 
             default:
-                throw new \Exception('cannot set/get requested property');
+                throw new \Exception('cannot set/get requested property' . print_r(func_get_args(), true));
         }
     }
 
@@ -122,7 +122,13 @@ class JsonFile extends \SplFileObject
      */
     public function __toString()
     {
-        return json_encode($this->__toArray(), JSON_PRETTY_PRINT);
+        return json_encode(
+            $this->__toArray(),
+            JSON_UNESCAPED_SLASHES +
+            JSON_UNESCAPED_LINE_TERMINATORS +
+            JSON_UNESCAPED_UNICODE +
+            JSON_PRETTY_PRINT
+        );
     }
 
     /**

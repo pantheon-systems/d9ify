@@ -23,7 +23,7 @@ class ComposerFileUnitTest extends TestCase
 
     /**
      * @test
-     * @testdox test schema functions
+     * @testdox test schema functions.
      */
     public function testSchemaFunctions() {
         $instance = $this->reflector->newInstance(
@@ -38,6 +38,19 @@ class ComposerFileUnitTest extends TestCase
             $result['$ref'],
             "schema ref should be a string" . print_r($result, true)
         );
+    }
+
+
+    /**
+     * @test
+     * @testdox Test schema validation.
+     */
+    public function testSchemaValidation() {
+        $instance = $this->reflector->newInstance(
+            __DIR__ . static::$EXAMPLE
+        );
+        $this->assertTrue($instance->validateSchema(), "Known schema should validate.");
+        $this->assertArrayHasKey('require', $instance->__toArray());
     }
 
 }

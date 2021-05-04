@@ -232,7 +232,7 @@ class ProcessCommand extends Command
         if ($helper->ask($input, $output, $question)) {
             return $this->getDestinationDirectory()
                 ->getComposerObject()
-                ->writeFile($output);
+                ->write();
         }
         $output->writeln("The composer Files were not changed");
         return 0;

@@ -174,15 +174,15 @@ class ComposerFile extends JsonFile
     /**
      * @param int $schema
      * @param null $schemaFile
-     * @return bool|void
+     * @return bool
      * @throws \Seld\JsonLint\ParsingException
      */
-    public function validateSchema()
+    public function validateSchema(): bool
     {
         $schema = static::getSchema();
         $schema->additionalProperties = true;
         $validator = new Validator();
-        return $validator->check($this->__toArray(), $schema);
+        return $validator->check($this->__toArray(), $schema) ?? false;
     }
 
     /**
@@ -190,7 +190,10 @@ class ComposerFile extends JsonFile
      */
     public function getDiff()
     {
-        return ArrayDiffMultidimensional::compare($this->original, $this->__toArray());
+        return array_merge_recursive(
+            ArrayDiffMultidimensional::compare($this->getOriginal(), $this->__toArray()),
+            ArrayDiffMultidimensional::compare($this->__toArray(), $this->getOriginal())
+        );
     }
 
     /**

@@ -29,6 +29,16 @@ class JsonFileUnitTest extends TestCase {
     }
 
     /**
+     * @test
+     * @testdox Test functions against a known value for the original.
+     */
+    public function testOriginal() {
+        $testInstance = $this->reflector->newInstance(static::$EXAMPLE);
+        $this->assertIsArray($testInstance->getOriginal(), "Original should be an array");
+        $this->assertIsString($testInstance->getOriginal()['name'], "Original should have a name value");
+    }
+
+    /**
      * @testdox Test basic file parsing.
      * @test
      * @throws \ReflectionException
@@ -36,7 +46,7 @@ class JsonFileUnitTest extends TestCase {
     public function testComposerFileRead()
     {
         $testInstance = $this->reflector->newInstance(static::$EXAMPLE);
-        $this->assertIsString($testInstance->getOriginal(), "Original should be set");
+
         $this->assertEquals(
             $testInstance->getName(),
             "pantheon-upstreams/drupal-project",
