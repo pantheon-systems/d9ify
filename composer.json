@@ -54,10 +54,14 @@
             "vendor/bin/phpcs --standard=psr2 src"
         ],
 		"pre-commit": [
+			"composer validate --strict",
 			"composer update",
 			"@code:fix",
 			"@code:lint",
 			"@test"
+		],
+		"post-install-cmd": [
+			"bash devops/setup-precommit.sh"
 		]
     },
 	"config": {

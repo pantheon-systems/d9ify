@@ -89,12 +89,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/composer.git",
-                "reference": "bfea0f7d1e991f237ccf448b0a0d24ede02d923a"
+                "reference": "7b77161b7e6bf808c2406198574aa5a7ad07cd30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/composer/zipball/bfea0f7d1e991f237ccf448b0a0d24ede02d923a",
-                "reference": "bfea0f7d1e991f237ccf448b0a0d24ede02d923a",
+                "url": "https://api.github.com/repos/composer/composer/zipball/7b77161b7e6bf808c2406198574aa5a7ad07cd30",
+                "reference": "7b77161b7e6bf808c2406198574aa5a7ad07cd30",
                 "shasum": ""
             },
             "require": {
@@ -180,7 +180,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-05-02T14:50:42+00:00"
+            "time": "2021-05-04T14:29:32+00:00"
         },
         {
             "name": "composer/metadata-minifier",
@@ -851,12 +851,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "9e945e8347c7185af14050b48c5f9e9434d45fa3"
+                "reference": "2da4cf5ad8c78e70e3c14077681aa7a678b91b4e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/9e945e8347c7185af14050b48c5f9e9434d45fa3",
-                "reference": "9e945e8347c7185af14050b48c5f9e9434d45fa3",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/2da4cf5ad8c78e70e3c14077681aa7a678b91b4e",
+                "reference": "2da4cf5ad8c78e70e3c14077681aa7a678b91b4e",
                 "shasum": ""
             },
             "require": {
@@ -921,7 +921,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-04-27T12:10:11+00:00"
+            "time": "2021-05-04T06:20:10+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -1174,12 +1174,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "4b7028028af6f8228285e413ccf19d35ca5f3d68"
+                "reference": "a32ad6250a5df3b4e95997b66dca67b1373780ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/4b7028028af6f8228285e413ccf19d35ca5f3d68",
-                "reference": "4b7028028af6f8228285e413ccf19d35ca5f3d68",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/a32ad6250a5df3b4e95997b66dca67b1373780ed",
+                "reference": "a32ad6250a5df3b4e95997b66dca67b1373780ed",
                 "shasum": ""
             },
             "require": {
@@ -1268,7 +1268,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-05-03T14:11:54+00:00"
+            "time": "2021-05-04T13:18:29+00:00"
         },
         {
             "name": "psr/log",
