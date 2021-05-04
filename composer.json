@@ -48,11 +48,17 @@
 			"vendor/bin/phpunit  --testsuite unit"
 		],
         "code:fix": [
-            "phpcbf --standard=psr2 src"
+            "phpcbf -q --standard=psr2 src"
         ],
         "code:lint": [
             "vendor/bin/phpcs --standard=psr2 src"
-        ]
+        ],
+		"pre-commit": [
+			"composer update",
+			"@code:fix",
+			"@code:lint",
+			"@test"
+		]
     },
 	"config": {
 		"platform": {

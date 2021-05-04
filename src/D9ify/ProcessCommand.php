@@ -102,6 +102,8 @@ class ProcessCommand extends Command
     {
         try {
             $output->writeln(static::$HELP_TEXT);
+
+            // Set Source & Dest
             $this->setSourceDirectory(
                 Directory::ensure(
                     $input->getArgument('source'),
@@ -115,19 +117,35 @@ class ProcessCommand extends Command
                     $output
                 )
             );
+
+            // Process contrib mods and add to new Composer
             $this->updateDestModulesAndThemesFromSource($input, $output);
+
+            // Process /libraries folder if exists &
+            // Add ES Libraries to the composer install payload
             $this->updateDestEsLibrariesFromSource($input, $output);
+
+            // Write the composer file and try to do an install.
+            // Exception will be thrown if install fails.
             $this->writeComposer($input, $output);
             $this->getDestinationDirectory()->install($output);
+
+
             // TODO:
-            // 1. Copy Custom code
-            // 1. Spelunk custom code and fix module version numbers if necessary.
-            // 1. Copy config files
-            // 1. commit-push code additions
+            // 1. Copy Custom code: e.g.
+            //      modules/custom,
+            //      themes/custom,
+            //      sites/all/modules/custom/*,
+            //      sites/all/themes/custom/*
+            //      ===> modules/custom, themes/custom,
+            // 1. Spelunk custom code in new site and fix module
+            //    version numbers (+ ^9) if necessary.
+            // 1. Copy config files.
+            // 1. commit-push code/config/composer additions.
             // 1. Rsync remote files to local directory
             // 1. Rsync remote files back up to new site
             // 1. Download database backup
-            // 1.
+            // 1. Restore Database backup to new site
         } catch (D9ifyExceptionBase $d9ifyException) {
             // TODO: Composer install exception help text
             $output->writeln((string) $d9ifyException);
