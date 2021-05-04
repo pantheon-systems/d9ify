@@ -50,7 +50,6 @@ class ComposerFileUnitTest extends TestCase
             __DIR__ . static::$EXAMPLE
         );
         $this->assertTrue($instance->validateSchema(), "Known schema should validate.");
-        $this->assertArrayHasKey('require', $instance->__toArray());
     }
 
 }
