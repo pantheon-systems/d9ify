@@ -128,7 +128,8 @@ class Directory
      * @return int
      * @throws \Exception
      */
-    public function install(OutputInterface $output) {
+    public function install(OutputInterface $output)
+    {
         $command = sprintf("cd %s && composer install", $this->clonePath);
         passthru($command, $result);
         if ($result !== 0) {

@@ -9,7 +9,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Class d9ExceptionBase
  * @package D9ify\Exceptions
  */
-abstract class D9ifyExceptionBase extends \Exception implements D9ifyExceptionInterface {
+abstract class D9ifyExceptionBase extends \Exception implements D9ifyExceptionInterface
+{
 
     protected static string $MESSAGE_TEXT = "";
 
@@ -42,5 +43,4 @@ abstract class D9ifyExceptionBase extends \Exception implements D9ifyExceptionIn
     {
         return $this->getMessage() . PHP_EOL . join(PHP_EOL, $this->commandOutput);
     }
-
 }

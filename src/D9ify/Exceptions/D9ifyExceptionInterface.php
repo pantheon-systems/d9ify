@@ -2,14 +2,14 @@
 
 namespace D9ify\Exceptions;
 
-
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Interface D9ifyExceptionInterface
  * @package D9ify\Exceptions
  */
-interface D9ifyExceptionInterface {
+interface D9ifyExceptionInterface
+{
 
     /**
      * D9ifyExceptionInterface constructor.
@@ -22,5 +22,4 @@ interface D9ifyExceptionInterface {
      * @return string
      */
     public function __toString(): string;
-
 }
