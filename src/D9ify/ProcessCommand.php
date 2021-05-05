@@ -122,6 +122,9 @@ class ProcessCommand extends Command
                 )
             );
 
+            // Copy base repositories over from the source composer.json
+            $this->copyRepositoriesFromSource($input, $output);
+
             // Process contrib mods and add to new Composer
             $this->updateDestModulesAndThemesFromSource($input, $output);
 
@@ -156,14 +159,24 @@ class ProcessCommand extends Command
             exit(1);
         } catch (\Exception $e) {
             // TODO: General help text and how to restart the process
-            $output->write("Script ended in Exception state." . $e->getMessage());
+            $output->writeln("Script ended in Exception state. " . $e->getMessage());
+            $output->writeln($e->getTraceAsString());
             exit(1);
         } catch (\Throwable $t) {
             // TODO: General help text and how to restart the process
-            $output->write("Script ended in error state." . $t->getMessage());
+            $output->write("Script ended in error state. " . $t->getMessage());
+            $output->writeln($t->getTraceAsString());
             exit(1);
         }
         exit(0);
+    }
+
+    protected function copyRepositoriesFromSource(InputInterface $input, OutputInterface $output)
+    {
+        $this->destinationDirectory->getComposerObject()->setRepositories(
+            $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'] ?? []
+        );
+        //$output->writeln(print_r($this->destinationDirectory->getComposerObject()->__toArray(), true));
     }
 
     /**
@@ -226,12 +239,38 @@ class ProcessCommand extends Command
     protected function updateDestEsLibrariesFromSource(InputInterface $input, OutputInterface $output)
     {
         $fileList = $this->sourceDirectory->spelunkFilesFromRegex('/libraries\/[0-9a-z-]*\/(package\.json$)/', $output);
-        $toMerge = [];
+        $repos = $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'];
         $composerFile = $this->getDestinationDirectory()->getComposerObject();
         foreach ($fileList as $key => $file) {
             $package = \json_decode(file_get_contents($file->getRealPath()), true, 10, JSON_THROW_ON_ERROR);
-            if (isset($package['name'])) {
-                $libraryName = @array_pop(explode(DIRECTORY_SEPARATOR, $package['name']));
+            $repoString = (string) $package['name'];
+            if (empty($repoString)) {
+                $repoString = is_string($package['repository']) ?
+                    $package['repository'] : $package['repository']['url'];
+            }
+            if (empty($repoString) || is_array($repoString)) {
+                $output->writeln([
+                    "*******************************************************************************",
+                    "* Skipping the file below because the package.json file does not have         *",
+                    "* a 'name' or 'repository' property. Add it by hand to the composer file.     *",
+                    "* like so: \"npm-asset/{npm-registry-name}\": \"{Version Spec}\" in           *",
+                    "* the REQUIRE section. Search for the id on https://www.npmjs.com             *",
+                    "*******************************************************************************",
+                    $file->getRealPath(),
+                ]);
+                continue;
+            }
+            $array = explode("/", $repoString);
+            $libraryName = @array_pop($array);
+            if (isset($repos[$libraryName])) {
+                $composerFile->addRequirement(
+                    $repos[$libraryName]['package']['name'],
+                    $repos[$libraryName]['package']['version']
+                );
+                continue;
+            }
+            if ($libraryName !== "") {
+                // Last ditch guess:
                 $composerFile->addRequirement("npm-asset/" . $libraryName, "^" . $package['version']);
             }
         }
@@ -245,7 +284,19 @@ class ProcessCommand extends Command
                 "type:npm-asset",
             ])
         );
+
         $composerFile->setExtraProperty('installer-paths', $installPaths);
+        $installerTypes = $composerFile->getExtraProperty('installer-types') ?? [];
+        $composerFile->setExtraProperty(
+            'installer-types',
+            array_unique(
+                array_merge($installerTypes, [
+                    "bower-asset",
+                    "npm-asset",
+                    "library",
+                ])
+            )
+        );
         $output->write(PHP_EOL);
         $output->write(PHP_EOL);
         $output->writeln([

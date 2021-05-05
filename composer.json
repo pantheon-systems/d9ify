@@ -24,10 +24,11 @@
         "squizlabs/php_codesniffer": "^4",
         "composer/semver": "^3",
         "symfony/serializer": "^5",
-        "justinrainbow/json-schema": "^5"
+        "justinrainbow/json-schema": "^5",
+		"psy/psysh": "^v0.10.8"
     },
 	"require-dev": {
-		"psy/psysh": "@stable"
+
 	},
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",

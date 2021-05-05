@@ -152,7 +152,10 @@ class Directory
         static::delTree($this->clonePath . "/vendor");
         $command = sprintf("cd %s && composer upgrade --with-dependencies", $this->clonePath);
         passthru($command, $result);
-        if ($result !== 0) {
+        if (!is_array($result)) {
+            $result = [$result];
+        }
+        if ($result[0] !== 0) {
             throw new ComposerInstallException($result, $output);
         }
         return $result;

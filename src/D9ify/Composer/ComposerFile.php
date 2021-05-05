@@ -4,9 +4,7 @@ namespace D9ify\Composer;
 
 use Composer\Config;
 use Composer\IO\IOInterface;
-use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
-use Composer\Util\HttpDownloader;
 use D9ify\Utility\JsonFile;
 use Exception;
 use JsonSchema\Validator;
@@ -137,33 +135,6 @@ class ComposerFile extends JsonFile
     }
 
     /**
-     * @throws JsonException
-     */
-    public function __toArray(): array
-    {
-        $toReturn = [];
-        $schema = $this->getSchema();
-        foreach ($schema->properties as $key => $value) {
-            $array_value = call_user_func([
-                $this,
-                $this->normalizeComposerPropertyToGetterName($key)
-            ]);
-            if (!empty($array_value)) {
-                $toReturn[$key] = $array_value;
-            }
-        }
-        return array_merge($toReturn, $this->getConfig()->raw());
-    }
-
-    /**
-     * @return string|void
-     */
-    public function __toString(): string
-    {
-        return json_encode($this->__toArray(), JSON_PRETTY_PRINT) ?? "{}";
-    }
-
-    /**
      *
      */
     public function configInit()
@@ -174,7 +145,23 @@ class ComposerFile extends JsonFile
                 new \Composer\Json\JsonFile($this->getRealPath())
             )
         );
-        $this->config->merge($this->getOriginal());
+        $orig = $this->getOriginal();
+        $repos = [];
+        foreach ($orig['repositories'] ?? [] as $name => $values) {
+            if (is_numeric($name)) {
+                if (str_contains($values['url'], "drupal")) {
+                    $repos['drupal'] = $values;
+                    continue;
+                }
+                if (str_contains($values['url'], "upstream")) {
+                    $repos['upstream'] = $values;
+                    continue;
+                }
+                $repos[$name] = $values;
+            }
+        }
+        $orig['repositories'] = $repos;
+        $this->config->merge($orig);
         if ($this->getIo()->isDebug()) {
             $this->io->info("INFO:" . print_r($this, true));
         }
@@ -208,6 +195,47 @@ class ComposerFile extends JsonFile
     public static function getSchemaRef(): array
     {
         return ['$ref' => static::getSchemaFile()];
+    }
+
+    /**
+     * @return string|void
+     */
+    public function __toString(): string
+    {
+        return json_encode($this->__toArray(), JSON_PRETTY_PRINT) ?? "{}";
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function __toArray(): array
+    {
+        $toReturn = [];
+        $schema = $this->getSchema();
+        foreach ($schema->properties as $key => $value) {
+            $array_value = call_user_func([
+                $this,
+                $this->normalizeComposerPropertyToGetterName($key)
+            ]);
+            if (!empty($array_value)) {
+                $toReturn[$key] = $array_value;
+            }
+        }
+        $toMerge = $this->getConfig()->raw();
+        $toMerge['config'] = array_filter($toMerge['config'], function ($item) {
+            return !is_null($item);
+        });
+        return array_merge($toReturn, $toMerge);
+    }
+
+    /**
+     * @param string|null $schemaFile
+     * @return \stdClass
+     * @throws \JsonException
+     */
+    public static function getSchema(string $schemaFile = null): \stdClass
+    {
+        return json_decode(file_get_contents(static::getSchemaFile()), false, 512, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -289,18 +317,6 @@ class ComposerFile extends JsonFile
     }
 
     /**
-     * @param string|null $schemaFile
-     * @return \stdClass
-     * @throws \JsonException
-     */
-    public static function getSchema(string $schemaFile = null): \stdClass
-    {
-        return json_decode(file_get_contents(static::getSchemaFile()), false, 512, JSON_THROW_ON_ERROR);
-    }
-
-
-
-    /**
      * @throws Exception
      */
     public function getDiff()
@@ -317,12 +333,17 @@ class ComposerFile extends JsonFile
      */
     public function addRequirement($package, $version)
     {
-        if (isset($this->requirements[$package])
-            && $this->requirements[$package] instanceof Requirement) {
-            $this->requirements[$package]->setVersionIfGreater($version);
-            return;
+        // Because the destination is a known pantheon multisite, filter out
+        // any acq-specific modules that might be in the composer
+        if (!str_contains($package, 'acquia')) {
+            if (isset($this->requirements[$package])
+                && $this->requirements[$package] instanceof Requirement
+            ) {
+                $this->requirements[$package]->setVersionIfGreater($version);
+                return;
+            }
+            $this->requirements[$package] = new Requirement($package, $version);
         }
-        $this->requirements[$package] = new Requirement($package, $version);
     }
 
     /**
@@ -364,7 +385,7 @@ class ComposerFile extends JsonFile
      */
     public function setRepositories(array $values)
     {
-        $this->getConfig()->merge(['config' => ['repositories' => $values]]);
+        $this->getConfig()->merge(['repositories' => $values]);
     }
 
     /**

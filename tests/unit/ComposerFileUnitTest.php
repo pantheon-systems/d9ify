@@ -125,22 +125,22 @@ class ComposerFileUnitTest extends TestCase
             $this->ioMock
         );
         $result = $instance->__toArray();
-        $this->ioMock->write("INSTANCE" . print_r($instance, true));
-        $this->ioMock->write("TOARRAY" . print_r($result, true));
+        // $this->ioMock->write("INSTANCE" . print_r($instance, true));
+        // $this->ioMock->write("TOARRAY" . print_r($result, true));
 
         $this->assertTrue(count($result['repositories']) == 3,
             "Test normalization against known values.");
 
-        $this->assertArrayHasKey('type', $result['repositories'][0],
+        $this->assertArrayHasKey('type', $result['repositories'][array_keys($result['repositories'])[0]],
             "Known repositories should have Key => value pairs"
             . print_r($result['repositories'], true));
-        $this->assertArrayHasKey('type', $result['repositories'][1],
+        $this->assertArrayHasKey('type', $result['repositories'][array_keys($result['repositories'])[1]],
             "Known repositories should have Key => value pairs"
             . print_r($result['repositories'], true));
-        $this->assertTrue(in_array($result['repositories'][0]['type'], ['path', 'composer']),
-            "Test against known value: " . print_r($result['repositories'][0], true));
+        $this->assertTrue(in_array($result['repositories'][array_keys($result['repositories'])[0]]['type'], ['path', 'composer']),
+            "Test against known value: " . print_r($result['repositories'], true));
 
-        $this->assertTrue(in_array($result['repositories'][1]['type'], ['path', 'composer']),
+        $this->assertTrue(in_array($result['repositories'][array_keys($result['repositories'])[0]]['type'], ['path', 'composer']),
             "Known repositories should have Key => value pairs"
             . print_r($result['repositories'], true));
 
