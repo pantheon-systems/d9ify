@@ -29,13 +29,6 @@ class ProcessCommand extends Command
         "*******************************************************************************",
         "* THIS SCRIPT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE    *",
         "* ERROR CHECKING. PLEASE USE AT YOUR OWN RISK.                                *",
-        "*******************************************************************************",
-        "* This script searches for every {modulename}.info.yml. If that file has a    *",
-        "* 'project' proerty (i.e. it's been thru the automated services at            *",
-        "* drupal.org), it records that property and version number and ensures        *",
-        "* those values are in the composer.json 'require' array. Your old composer    *",
-        "* file will re renamed backup-*-composer.json.                                *",
-        "*******************************************************************************",
         "* The guide to use this file is in /README.md                                 *",
         "*******************************************************************************",
     ];
@@ -109,19 +102,27 @@ class ProcessCommand extends Command
 
             // Set Source & Dest
             $this->setSourceDirectory(
-                Directory::ensure(
+                Directory::factory(
                     $input->getArgument('source'),
                     $output
                 )
             );
+            // Since this is the source directory, we should look for it,
+            // but don't create it because it needs to be previously existing
+            // We clone a local copy
+            $this->getSourceDirectory()->ensure(false);
+            $org = $this->getSourceDirectory()->getInfo()->getOrganization();
             $this->setDestinationDirectory(
-                Directory::ensure(
+                Directory::factory(
                     $input->getArgument('destination') ??
                     $this->sourceDirectory->getSiteInfo()->getName() . "-" . date('Y'),
-                    $output
+                    $output,
+                    $org
                 )
             );
-
+            // Create the destination directory/site if it doesn't exist
+            // and clone a local copy.
+            $this->getDestinationDirectory()->ensure(true);
             // Copy base repositories over from the source composer.json
             $this->copyRepositoriesFromSource($input, $output);
 
@@ -180,6 +181,15 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @description This script searches for every {modulename}.info.yml. If that
+     * file has a 'project' proerty (i.e. it's been thru the automated services at
+     * drupal.org), it records that property and version number and ensures
+     * those values are in the composer.json 'require' array. Your old composer
+     * file will re renamed backup-*-composer.json.
+     *
+     *
+     *
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
@@ -327,6 +337,7 @@ class ProcessCommand extends Command
                 $this->destinationDirectory->getComposerObject()->getRealPath()
             )
         );
+        $this->destinationDirectory->getComposerObject()->backupFile();
         $question = new ConfirmationQuestion(" Type '(y)es' to continue: ", false);
         $helper = $this->getHelper('question');
         if ($helper->ask($input, $output, $question)) {

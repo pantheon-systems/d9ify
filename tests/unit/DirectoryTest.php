@@ -1,7 +1,7 @@
 <?php
 
 
-namespace D9ify\tests;
+namespace D9ify\tests\unit;
 
 
 use D9ify\Site\Info;
@@ -20,9 +20,12 @@ class DirectoryTest extends TestCase {
 
   function testDirectoryInstance() {
     $outputMock = $this->getMockBuilder(BufferedOutput::class)->getMock();
-    $siteInfoMock = $this->getMockBuilder(Info::class)->setConstructorArgs(['newSite'])->getMock();
-    $testInstance = $this->reflector->newInstance($siteInfoMock, $outputMock);
-    $this->assertInstanceOf('\D9ify\Site\Directory', $testInstance, "New instance should be of directory class");
+    $testInstance = $this->reflector->newInstance('newsite', $outputMock);
+    $this->assertNull($testInstance->getComposerObject(),
+        "New Directory should be null.");
+    $this->expectException("Exception");
+    $testInstance->ensure(false);
+
   }
 
 

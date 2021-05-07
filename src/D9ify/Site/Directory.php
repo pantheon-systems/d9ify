@@ -15,6 +15,11 @@ class Directory
 {
 
     /**
+     * @var \Symfony\Component\Console\Output\OutputInterface
+     */
+    protected OutputInterface $output;
+
+    /**
      * @var \D9ify\Site\Info
      */
     protected $info;
@@ -25,51 +30,138 @@ class Directory
     protected $clonePath;
 
     /**
-     * @var
+     * @var ComposerFile
      */
-    protected $composerFile;
+    protected ?ComposerFile $composerFile = null;
 
     /**
      * Directory constructor.
      *
-     * @param \D9ify\Site\Info $site
+     * @param string | \D9ify\Site\Info $site
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @throws \JsonException
      */
-    public function __construct(string|InfoInterface $site, OutputInterface $output)
+    public function __construct($site, OutputInterface $output, $org = null)
     {
+        $this->setOutput($output);
         $this->setSiteInfo($site);
+    }
 
+
+    /**
+     * @param string $site_id
+     * @param null $org
+     */
+    public function setSiteInfo(string $site_id, $org = null): void
+    {
+        $this->setInfo(new Info($site_id, $org));
+    }
+
+    /**
+     * @param string $site
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return static
+     * @throws \JsonException
+     */
+    public static function factory(string $site, OutputInterface $output)
+    {
+        return new static($site, $output);
+    }
+
+    /**
+     * @param $dir
+     *
+     * @return bool Success/Failure.
+     */
+    public static function delTree($dir): bool
+    {
+        if (is_dir($dir)) {
+            $files = array_diff(scandir($dir), ['.', '..']);
+            foreach ($files as $file) {
+                (is_dir("$dir/$file")) ? static::delTree("$dir/$file") : unlink("$dir/$file");
+            }
+            return rmdir($dir);
+        }
+        return true;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function ensure(bool $create = false)
+    {
+        $valid = $this->getInfo()->valid();
+        if ($valid === false) {
+            // if site doesn't exist
+            if ($create) {
+                $valid = $this->getInfo()->create();
+            }
+            if ($valid === false) {
+                throw new \Exception("Site does not exist and cannot be created.");
+            }
+        }
         $this->clonePath = new \SplFileInfo(getcwd() . "/" . $this->info->getName());
         if (!$this->clonePath->isDir()) {
             // -oStrictHostKeyChecking=no
-            $output->writeln(sprintf("Local copy of site  %s does not exist... cloning...", $this->info->getName()));
-            $command = sprintf("terminus connection:info %s.dev --format=json", $this->info->getName());
-            exec($command, $result, $status);
+            $$this->output->writeln(sprintf(
+                "Local copy of site  %s does not exist... cloning...",
+                $this->info->getName()
+            ));
+            // GET CONNECTION INFO
+            $connectionInfo = $this->getConnectionInfo();
+            exec(
+                $connectionInfo['git_command'] . " -oStrictHostKeyChecking=no",
+                $result,
+                $status
+            );
             if ($status !== 0) {
-                throw new \Exception("Cannot get command to clone site. " . join(PHP_EOL, $output));
-            }
-            $connectionInfo = json_decode(join("", $result), true, 10, JSON_THROW_ON_ERROR);
-            exec($connectionInfo['git_command'] . " -oStrictHostKeyChecking=no", $result, $status);
-            if ($status !== 0) {
-                throw new \Exception("Cannot clone site with terminus command." . join(PHP_EOL, $result));
+                throw new \Exception("Cannot clone site with terminus command." .
+                    join(PHP_EOL, $result));
             }
         }
-        $output->writeln(sprintf("Site Code Folder: %s", $this->clonePath->getRealPath()));
+        $$this->getOutput()->writeln(
+            sprintf(
+                "Site Code Folder: %s",
+                $this->clonePath->getRealPath()
+            )
+        );
         $this->setComposerFile();
     }
 
     /**
-     * @param string|InfoInterface $site_id
+     * @return \D9ify\Site\Info
      */
-    public function setSiteInfo(string|InfoInterface $site_id): void
+    public function getInfo(): Info
     {
-        if (is_string($site_id)) {
-            $this->info = new Info($site_id);
-            return;
+        return $this->info;
+    }
+
+    /**
+     * @param \D9ify\Site\Info $info
+     */
+    public function setInfo(Info $info): void
+    {
+        $this->info = $info;
+    }
+
+    /**
+     * @return mixed|null
+     * @throws \JsonException
+     */
+    public function getConnectionInfo()
+    {
+        $command = sprintf(
+            "%s connection:info %s.dev --format=json",
+            "vendor/bin/terminus.phar",
+            $this->info->getName()
+        );
+        exec($command, $result, $status);
+        if ($status !== 0) {
+            return null;
         }
-        $this->info = $site_id;
+        return json_decode(join("", $result), true, 10, JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -89,21 +181,9 @@ class Directory
     }
 
     /**
-     * @param \D9ify\Site\Info $site
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return static
-     * @throws \JsonException
-     */
-    public static function ensure(string $site, OutputInterface $output)
-    {
-        return new static(new Info($site), $output);
-    }
-
-    /**
      * @return \D9ify\Site\ComposerFile
      */
-    public function &getComposerObject(): ComposerFile
+    public function &getComposerObject(): ?ComposerFile
     {
         return $this->composerFile;
     }
@@ -123,9 +203,21 @@ class Directory
         );
         $max = count($allFiles);
         $current = 0;
-        return array_filter($allFiles, function (\SPLFileInfo $file) use ($regex, &$max, &$current, &$output) {
+        return array_filter($allFiles, function (\SPLFileInfo $file) use (
+            $regex,
+            &$max,
+            &$current,
+            &
+            $output
+        ) {
             $this->progressBar($current++, $max, $output);
-            return preg_match($regex, $file->getRealPath()) && !strpos($file->getRealPath(), 'test');
+            return preg_match(
+                $regex,
+                $file->getRealPath()
+            ) && !strpos(
+                $file->getRealPath(),
+                'test'
+            );
         });
     }
 
@@ -137,12 +229,17 @@ class Directory
     {
         $perc = floor(($done / $total) * 100);
         $left = 100 - $perc;
-        $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
+        $write = sprintf(
+            "\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total",
+            "",
+            ""
+        );
         $output->write($write);
     }
 
     /**
      * @param OutputInterface $output
+     *
      * @return int
      * @throws \Exception
      */
@@ -150,7 +247,10 @@ class Directory
     {
         is_file($this->clonePath . "/composer.lock") ? unlink($this->clonePath . "/composer.lock") : [];
         static::delTree($this->clonePath . "/vendor");
-        $command = sprintf("cd %s && composer upgrade --with-dependencies", $this->clonePath);
+        $command = sprintf(
+            "cd %s && composer upgrade --with-dependencies",
+            $this->clonePath
+        );
         passthru($command, $result);
         if (!is_array($result)) {
             $result = [$result];
@@ -162,25 +262,42 @@ class Directory
     }
 
     /**
-     * @param $dir
-     * @return bool Success/Failure.
-     */
-    public static function delTree($dir): bool
-    {
-        if (is_dir($dir)) {
-            $files = array_diff(scandir($dir), array('.', '..'));
-            foreach ($files as $file) {
-                (is_dir("$dir/$file")) ? static::delTree("$dir/$file") : unlink("$dir/$file");
-            }
-            return rmdir($dir);
-        } return true;
-    }
-
-    /**
      * @return \D9ify\Site\Info
      */
     public function getSiteInfo(): Info
     {
         return $this->info;
+    }
+
+    /**
+     * @return \SplFileInfo
+     */
+    public function getClonePath(): \SplFileInfo
+    {
+        return $this->clonePath;
+    }
+
+    /**
+     * @param \SplFileInfo $clonePath
+     */
+    public function setClonePath(\SplFileInfo $clonePath): void
+    {
+        $this->clonePath = $clonePath;
+    }
+
+    /**
+     * @return \Symfony\Component\Console\Output\OutputInterface
+     */
+    public function getOutput(): OutputInterface
+    {
+        return $this->output;
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    public function setOutput(OutputInterface $output): void
+    {
+        $this->output = $output;
     }
 }

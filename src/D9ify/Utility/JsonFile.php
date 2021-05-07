@@ -136,7 +136,7 @@ class JsonFile extends \SplFileObject
     /**
      * @return string | null
      */
-    public function serialize(): string | null
+    public function serialize(): ?string
     {
         return $this->__toString();
     }
@@ -178,5 +178,15 @@ class JsonFile extends \SplFileObject
     public static function normalizeComposerPropertyToGetterName($property)
     {
         return "get" . str_replace(" ", "", (ucwords(str_replace("-", " ", $property))));
+    }
+
+
+    public function backupFile()
+    {
+        copy(
+            $this->getRealPath(),
+            dirname($this->getRealPath()) .
+            sprintf("/composer-%s.json", uniqid())
+        );
     }
 }

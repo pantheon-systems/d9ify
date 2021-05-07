@@ -1,6 +1,6 @@
 <?php
 
-namespace D9ify\tests;
+namespace D9ify\tests\unit;
 
 use PHPUnit\Framework\TestCase;
 

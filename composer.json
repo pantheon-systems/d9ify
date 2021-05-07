@@ -12,27 +12,29 @@
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
-            "D9ify\\" : "src/D9ify"
+            "D9ify\\" : "src/D9ify",
+			"D9ify\\Composer\\" : "src/D9ify/Composer",
+			"D9ify\\Exceptions\\" : "src/D9ify/Exceptions",
+			"D9ify\\Site\\": "src/D9ify/Site"
         }
     },
     "require": {
-		"php": ">=8.0.0",
-        "symfony/console": "^3.3",
+		"php": ">=7.4.0",
+        "symfony/console": "^4",
         "composer/composer": "^2",
-        "rogervila/array-diff-multidimensional": "dev-master",
+        "rogervila/array-diff-multidimensional": "^2",
         "phpunit/phpunit": "^10",
         "squizlabs/php_codesniffer": "^4",
         "composer/semver": "^3",
         "symfony/serializer": "^5",
         "justinrainbow/json-schema": "^5",
-		"psy/psysh": "^v0.10.8"
+		"psy/psysh": "^v0.10.8",
+        "tm/tooly-composer-script": "^1.4"
     },
-	"require-dev": {
-
-	},
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",
-		"ext-zlib": "Allow gzip compression of HTTP requests"
+		"ext-zlib": "Allow gzip compression of HTTP requests",
+		"ext-json": "*"
 	},
     "scripts": {
         "d9ify": [
@@ -62,12 +64,26 @@
 			"@test"
 		],
 		"post-install-cmd": [
-			"bash devops/setup-precommit.sh"
+			"bash devops/setup-precommit.sh",
+			"Tooly\\ScriptHandler::installPharTools"
+		],
+		"post-update-cmd": [
+			"Tooly\\ScriptHandler::installPharTools"
 		]
     },
+	"extra": {
+		"tools": {
+			"robo": {
+				"url": "https://robo.li/robo.phar"
+			},
+			"terminus": {
+				"url": "https://github.com/pantheon-systems/terminus/releases/latest/download/terminus.phar"
+			}
+		}
+	},
 	"config": {
 		"platform": {
-			"php": "8.0.0"
+			"php": "7.4.0"
 		},
 		"platform-check": false
 	}

@@ -11,7 +11,6 @@ class Application extends SymfApp
     public static function process(\Composer\Script\Event $event)
     {
         $arguments = $event->getArguments();
-        $site_id = sprintf("%s", end($arguments));
         $process = new ProcessCommand();
         $process->setComposerIOInterface($event->getIO());
         $GLOBALS['app'] = new static();
