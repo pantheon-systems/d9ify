@@ -95,7 +95,7 @@ class Directory
         $valid = $this->getInfo()->valid();
         if ($valid === false) {
             // if site doesn't exist
-            if ($create) {
+            if ($create === true) {
                 $valid = $this->getInfo()->create();
             }
             if ($valid === false) {
@@ -245,10 +245,11 @@ class Directory
      */
     public function install(OutputInterface $output)
     {
-        is_file($this->clonePath . "/composer.lock") ? unlink($this->clonePath . "/composer.lock") : [];
-        static::delTree($this->clonePath . "/vendor");
+        is_file($this->clonePath . "/composer.lock") ?
+            unlink($this->clonePath . "/composer.lock") : [];
         $command = sprintf(
-            "cd %s && composer upgrade --with-dependencies",
+            "rm -Rf %s && cd %s && composer upgrade --with-dependencies",
+            $this->clonePath . "/vendor",
             $this->clonePath
         );
         passthru($command, $result);
