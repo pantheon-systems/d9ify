@@ -21,11 +21,16 @@ class DirectoryTest extends TestCase {
   function testDirectoryInstance() {
     $outputMock = $this->getMockBuilder(BufferedOutput::class)->getMock();
     $testInstance = $this->reflector->newInstance('newsite', $outputMock);
-    $this->assertNull($testInstance->getComposerObject(),
-        "New Directory should be null.");
     $this->expectException("Exception");
     $testInstance->ensure(false);
+  }
 
+  function testDirectorySupportingObjects() {
+      $outputMock = $this->getMockBuilder(BufferedOutput::class)->getMock();
+      $testInstance = $this->reflector->newInstance('newsite', $outputMock);
+      $this->assertFalse($testInstance->getInfo()->valid(), "Get Info should return null");
+      $this->assertNull($testInstance->getComposerObject(),
+          "New Directory should be null.");
   }
 
 

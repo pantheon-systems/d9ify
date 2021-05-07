@@ -105,7 +105,7 @@ class Directory
         $this->clonePath = new \SplFileInfo(getcwd() . "/" . $this->info->getName());
         if (!$this->clonePath->isDir()) {
             // -oStrictHostKeyChecking=no
-            $$this->output->writeln(sprintf(
+            $this->output->writeln(sprintf(
                 "Local copy of site  %s does not exist... cloning...",
                 $this->info->getName()
             ));
@@ -121,7 +121,7 @@ class Directory
                     join(PHP_EOL, $result));
             }
         }
-        $$this->getOutput()->writeln(
+        $this->getOutput()->writeln(
             sprintf(
                 "Site Code Folder: %s",
                 $this->clonePath->getRealPath()
