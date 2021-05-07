@@ -130,7 +130,6 @@ class ProcessCommand extends Command
             $org = $this->getSourceDirectory()->getInfo()->getOrganization();
             $this->getDestinationDirectory()->ensure(true);
             $this->copyRepositoriesFromSource($input, $output);
-
             /**
              * Step 3: Move over Contrib
              *
@@ -138,13 +137,19 @@ class ProcessCommand extends Command
              * those files.
              */
             $this->updateDestModulesAndThemesFromSource($input, $output);
-
-            // Process /libraries folder if exists &
-            // Add ES Libraries to the composer install payload
+            /**
+             * Step 4: web/libraries folder (JS contrib/drupal libraries)
+             *
+             * Process /libraries folder if exists & Add ES Libraries to the composer
+             * install payload
+             */
             $this->updateDestEsLibrariesFromSource($input, $output);
-
-            // Write the composer file and try to do an install.
-            // Exception will be thrown if install fails.
+            /**
+             * Step 5: ...and GO!
+             *
+             * Write the composer file and try to do an install. Exception will be
+             * thrown if install fails.
+             */
             $this->writeComposer($input, $output);
             $this->getDestinationDirectory()->install($output);
 
