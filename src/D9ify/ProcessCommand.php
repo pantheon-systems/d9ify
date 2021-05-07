@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ProcessCommand
@@ -33,6 +34,9 @@ class ProcessCommand extends Command
         "*******************************************************************************",
     ];
 
+    /**
+     * @var \Composer\IO\IOInterface|null
+     */
     protected ?IOInterface $composerIOInterface = null;
 
     /**
@@ -102,8 +106,8 @@ class ProcessCommand extends Command
             /**
              * Step 1. Set Source and Destination.
              *
-             * Destination name will be {source}-{THIS YEAR} by default
-             * if you don't provide a value.
+             * Source Param is not optional and needs to be
+             * a pantheon site ID or name.
              *
              */
             $this->setSourceDirectory(
@@ -112,7 +116,18 @@ class ProcessCommand extends Command
                     $output
                 )
             );
-
+            /**
+             * Step 1b. Grab the org if there is one
+             */
+            $org = $this->getSourceDirectory()->getInfo()->getOrganization();
+            /**
+             * Step 1c. Do the same for destination
+             *
+             * Destination name will be {source}-{THIS YEAR} by default
+             * if you don't provide a value. Destination name will be
+             * {source}-{THIS YEAR} by default if you don't provide a value.
+             *
+             */
             $this->setDestinationDirectory(
                 Directory::factory(
                     $input->getArgument('destination') ??
@@ -127,7 +142,6 @@ class ProcessCommand extends Command
              * Clone both sites to folders inside this root directory.
              */
             $this->getSourceDirectory()->ensure(false);
-            $org = $this->getSourceDirectory()->getInfo()->getOrganization();
             $this->getDestinationDirectory()->ensure(true);
             $this->copyRepositoriesFromSource($input, $output);
             /**
@@ -147,20 +161,24 @@ class ProcessCommand extends Command
             /**
              * Step 5: ...and GO!
              *
-             * Write the composer file and try to do an install. Exception will be
-             * thrown if install fails.
+             * Write the composer file .
              */
             $this->writeComposer($input, $output);
+            /**
+             * Step 6: Attempt to do an composer install
+             *
+             * Exception will be thrown if install fails.
+             */
             $this->getDestinationDirectory()->install($output);
-
-
+            /**
+             * Step 7: Custom Code
+             *
+             * This step looks for {MODULENAME}.info.yml files that also have "custom"
+             * in the path. If they have THEME in the path it copies them to web/themes/custom.
+             * If they have "module" in the path, it copies the folder to web/modules/custom.
+             */
+            $this->copyCustomCode($input, $output);
             // TODO:
-            // 1. Copy Custom code: e.g.
-            //      modules/custom,
-            //      themes/custom,
-            //      sites/all/modules/custom/*,
-            //      sites/all/themes/custom/*
-            //      ===> modules/custom, themes/custom,
             // 1. Spelunk custom code in new site and fix module
             //    version numbers (+ ^9) if necessary.
             // 1. Copy config files.
@@ -187,6 +205,10 @@ class ProcessCommand extends Command
         exit(0);
     }
 
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
     protected function copyRepositoriesFromSource(InputInterface $input, OutputInterface $output)
     {
         $this->destinationDirectory->getComposerObject()->setRepositories(
@@ -345,14 +367,20 @@ class ProcessCommand extends Command
             "* These changes are being applied to the destination site composer: *",
             "*********************************************************************",
         ]);
-        $output->writeln(print_r($this->destinationDirectory->getComposerObject()->getDiff(), true));
+        $output->writeln(print_r($this->destinationDirectory
+                                     ->getComposerObject()
+                                     ->getDiff(), true));
         $output->writeln(
             sprintf(
                 "Write these changes to the composer file at %s?",
-                $this->destinationDirectory->getComposerObject()->getRealPath()
+                $this->destinationDirectory
+                    ->getComposerObject()
+                    ->getRealPath()
             )
         );
-        $this->destinationDirectory->getComposerObject()->backupFile();
+        $this->destinationDirectory
+            ->getComposerObject()
+            ->backupFile();
         $question = new ConfirmationQuestion(" Type '(y)es' to continue: ", false);
         $helper = $this->getHelper('question');
         if ($helper->ask($input, $output, $question)) {
@@ -378,5 +406,80 @@ class ProcessCommand extends Command
     public function setComposerIOInterface(IOInterface $composerIOInterface): void
     {
         $this->composerIOInterface = $composerIOInterface;
+    }
+
+    /**
+     *
+     */
+    public function copyCustomCode(InputInterface $input, OutputInterface $output) :bool
+    {
+        $this->getDestinationDirectory()->ensureCustomCodeFoldersExist($input, $output);
+        $failure_list = [];
+        $infoFiles = $this
+            ->sourceDirectory
+            ->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
+        foreach ($infoFiles as $fileName => $fileInfo) {
+            try {
+                $contents = Yaml::parse(file_get_contents($fileName));
+            } catch (\Exception $exception) {
+                if ($output->isVerbose()) {
+                    $output->writeln($exception->getTraceAsString());
+                }
+                continue;
+            }
+            if (!isset($contents['type'])) {
+                continue;
+            }
+            $sourceDir = dirname($fileInfo->getRealPath());
+            switch ($contents['type']) {
+                case "module":
+                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/sites/modules/custom";
+                    break;
+
+                case "theme":
+                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/sites/themes/custom";
+                    break;
+
+                default:
+                    continue 2;
+            }
+            $command = sprintf(
+                "cp -Rf %s %s",
+                $sourceDir,
+                $destination
+            );
+            if ($output->isVerbose()) {
+                $output->writeln($command);
+            }
+            exec(
+                $command,
+                $result,
+                $status
+            );
+            if ($status !== 0) {
+                $failure_list[$fileName] = $result;
+            }
+        }
+        $output->write(PHP_EOL);
+        $output->write(PHP_EOL);
+        $failures = count($failure_list);
+        $output->writeln(sprintf("Copy operations are complete with %d errors.", $failures));
+        if ($failures) {
+            $toWrite = [
+                    "*******************************************************************************",
+                    "* The following files had an error while copying. You will need to inspect    *",
+                    "* The folders by hand or diff them. I'm not saying the folders weren't copied.*",
+                    "* I'm saying I'm not sure they were copied in-tact. Double check the contents *",
+                    "* They might have errored on a single file which would stop the copy.         *",
+                    "* If you want to see the complete output from the copies, run this command    *",
+                    "* with the --verbose switch.                                                  *",
+                    "*******************************************************************************",
+                ] + array_keys($failure_list);
+            $output->writeln($toWrite);
+            if ($output->isVerbose()) {
+                $output->write(print_r($failure_list, true));
+            }
+        }
+        return true;
     }
 }

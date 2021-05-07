@@ -4,6 +4,7 @@ namespace D9ify\Site;
 
 use D9ify\Composer\ComposerFile;
 use D9ify\Exceptions\ComposerInstallException;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -300,5 +301,23 @@ class Directory
     public function setOutput(OutputInterface $output): void
     {
         $this->output = $output;
+    }
+
+    public function ensureCustomCodeFoldersExist(InputInterface $input, OutputInterface $output)
+    {
+        if (!file_exists($this->getClonePath() . "/web/sites/themes/custom")) {
+            mkdir(
+                $this->getClonePath() . "/web/sites/themes/custom",
+                0777,
+                true
+            );
+        }
+        if (!file_exists($this->getClonePath() . "/web/sites/modules/custom")) {
+            mkdir(
+                $this->getClonePath() . "/web/sites/modules/custom",
+                0777,
+                true
+            );
+        }
     }
 }

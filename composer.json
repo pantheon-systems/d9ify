@@ -29,7 +29,8 @@
         "symfony/serializer": "^5",
         "justinrainbow/json-schema": "^5",
 		"psy/psysh": "^v0.10.8",
-        "tm/tooly-composer-script": "^1.4"
+        "tm/tooly-composer-script": "^1.4",
+        "symfony/yaml": "^5"
     },
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",
