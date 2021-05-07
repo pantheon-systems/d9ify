@@ -99,19 +99,20 @@ class ProcessCommand extends Command
     {
         try {
             $output->writeln(static::$HELP_TEXT);
-
-            // Set Source & Dest
+            /**
+             * Step 1. Set Source and Destination.
+             *
+             * Destination name will be {source}-{THIS YEAR} by default
+             * if you don't provide a value.
+             *
+             */
             $this->setSourceDirectory(
                 Directory::factory(
                     $input->getArgument('source'),
                     $output
                 )
             );
-            // Since this is the source directory, we should look for it,
-            // but don't create it because it needs to be previously existing
-            // We clone a local copy
-            $this->getSourceDirectory()->ensure(false);
-            $org = $this->getSourceDirectory()->getInfo()->getOrganization();
+
             $this->setDestinationDirectory(
                 Directory::factory(
                     $input->getArgument('destination') ??
@@ -120,13 +121,22 @@ class ProcessCommand extends Command
                     $org
                 )
             );
-            // Create the destination directory/site if it doesn't exist
-            // and clone a local copy.
+            /**
+             * Step 2: Clone Source & Destination.
+             *
+             * Clone both sites to folders inside this root directory.
+             */
+            $this->getSourceDirectory()->ensure(false);
+            $org = $this->getSourceDirectory()->getInfo()->getOrganization();
             $this->getDestinationDirectory()->ensure(true);
-            // Copy base repositories over from the source composer.json
             $this->copyRepositoriesFromSource($input, $output);
 
-            // Process contrib mods and add to new Composer
+            /**
+             * Step 3: Move over Contrib
+             *
+             * Spelunk the old site for MODULE.info.yaml and after reading
+             * those files.
+             */
             $this->updateDestModulesAndThemesFromSource($input, $output);
 
             // Process /libraries folder if exists &

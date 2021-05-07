@@ -1174,12 +1174,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "bf65459024fbba4b86cf96a34db77e9cd114830a"
+                "reference": "b9dbc1ce7924ffc6755055aac39d57e64b845206"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/bf65459024fbba4b86cf96a34db77e9cd114830a",
-                "reference": "bf65459024fbba4b86cf96a34db77e9cd114830a",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/b9dbc1ce7924ffc6755055aac39d57e64b845206",
+                "reference": "b9dbc1ce7924ffc6755055aac39d57e64b845206",
                 "shasum": ""
             },
             "require": {
@@ -1268,7 +1268,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-05-06T13:38:07+00:00"
+            "time": "2021-05-07T14:31:15+00:00"
         },
         {
             "name": "psr/container",
@@ -3552,12 +3552,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "ff77601582f1ffe003ca43f3860e096d0937a96a"
+                "reference": "29988c9bcac7bb66a03f00a2adaae131778db61c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/ff77601582f1ffe003ca43f3860e096d0937a96a",
-                "reference": "ff77601582f1ffe003ca43f3860e096d0937a96a",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/29988c9bcac7bb66a03f00a2adaae131778db61c",
+                "reference": "29988c9bcac7bb66a03f00a2adaae131778db61c",
                 "shasum": ""
             },
             "require": {
@@ -3617,7 +3617,7 @@
                 "dump"
             ],
             "support": {
-                "source": "https://github.com/symfony/var-dumper/tree/v5.3.0-BETA2"
+                "source": "https://github.com/symfony/var-dumper/tree/5.x"
             },
             "funding": [
                 {
@@ -3633,7 +3633,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-04-19T14:14:47+00:00"
+            "time": "2021-05-07T14:34:05+00:00"
         },
         {
             "name": "theseer/tokenizer",
