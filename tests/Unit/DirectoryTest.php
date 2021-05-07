@@ -1,7 +1,7 @@
 <?php
 
 
-namespace D9ify\tests\unit;
+namespace D9ify\tests\Unit;
 
 
 use D9ify\Site\Info;
