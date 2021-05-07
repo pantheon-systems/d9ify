@@ -18,6 +18,12 @@ class DirectoryTest extends TestCase {
     $this->reflector = new \ReflectionClass('\D9ify\Site\Directory');
   }
 
+    /**
+     * @test
+     * @testdox Test directory instance.
+     *
+     * @throws \ReflectionException
+     */
   function testDirectoryInstance() {
     $outputMock = $this->getMockBuilder(BufferedOutput::class)->getMock();
     $testInstance = $this->reflector->newInstance('newsite', $outputMock);
@@ -25,6 +31,11 @@ class DirectoryTest extends TestCase {
     $testInstance->ensure(false);
   }
 
+    /**
+     * @test
+     * @testdox Test directory supporting objects.
+     * @throws \ReflectionException
+     */
   function testDirectorySupportingObjects() {
       $outputMock = $this->getMockBuilder(BufferedOutput::class)->getMock();
       $testInstance = $this->reflector->newInstance('newsite', $outputMock);
