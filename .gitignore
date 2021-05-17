@@ -5,3 +5,4 @@
 /.phpunit.cache
 /.DS_Store
 .DS_Store
+.phpunit.result.cache

@@ -53,29 +53,6 @@ class ProcessCommand extends Command
     protected Directory $destinationDirectory;
 
     /**
-     * @return \D9ify\Site\Directory
-     */
-    public function getSourceDirectory(): Directory
-    {
-        return $this->sourceDirectory;
-    }
-
-    /**
-     * @Step
-     * @description
-     * ### Set Source and Destination.
-     *
-     * Source Param is not optional and needs to be
-     * a pantheon site ID or name.
-     *
-     * @param \D9ify\Site\Directory $sourceDirectory
-     */
-    public function setSourceDirectory(Directory $sourceDirectory): void
-    {
-        $this->sourceDirectory = $sourceDirectory;
-    }
-
-    /**
      * Configure.
      */
     protected function configure()
@@ -110,7 +87,6 @@ class ProcessCommand extends Command
     {
         try {
             $output->writeln(static::$HELP_TEXT);
-
             $this->setSourceDirectory(
                 Directory::factory(
                     $input->getArgument('source'),
@@ -118,16 +94,6 @@ class ProcessCommand extends Command
                 )
             );
             $org = $this->getSourceDirectory()->getInfo()->getOrganization();
-            /**
-             * @Step
-             * @description
-             * ### Do the same for destination
-             *
-             * Destination name will be {source}-{THIS YEAR} by default
-             * if you don't provide a value. Destination name will be
-             * {source}-{THIS YEAR} by default if you don't provide a value.
-             *
-             */
             $this->setDestinationDirectory(
                 Directory::factory(
                     $input->getArgument('destination') ??
@@ -136,42 +102,11 @@ class ProcessCommand extends Command
                     $org
                 )
             );
-
             $this->copyRepositoriesFromSource($input, $output);
-            /**
-             * @Step
-             * @description
-             * ### Move over Contrib
-             *
-             * Spelunk the old site for MODULE.info.yaml and after reading
-             * those files.
-             *
-             */
             $this->updateDestModulesAndThemesFromSource($input, $output);
-            /**
-             * @Step
-             * @description
-             * ### JS contrib/drupal libraries
-             *
-             * Process /libraries folder if exists & Add ES Libraries to the composer
-             * install payload
-             */
             $this->updateDestEsLibrariesFromSource($input, $output);
-            /**
-             * @Step
-             * @description
-             * ### Write the composer file.
-             */
             $this->writeComposer($input, $output);
-            /**
-             * @Step
-             * @description
-             * ### composer install
-             *
-             * Exception will be thrown if install fails.
-             *
-             */
-            $this->getDestinationDirectory()->install($output);
+            $this->destinationComposerInstall();
             /**
              * @Step
              * @description
@@ -224,6 +159,55 @@ class ProcessCommand extends Command
     /**
      * @Step
      * @description
+     * ### Set Source and Destination.
+     *
+     * Source Param is not optional and needs to be
+     * a pantheon site ID or name.
+     *
+     * @param \D9ify\Site\Directory $sourceDirectory
+     */
+    public function setSourceDirectory(Directory $sourceDirectory): void
+    {
+        $this->sourceDirectory = $sourceDirectory;
+    }
+
+    /**
+     * @return \D9ify\Site\Directory
+     */
+    public function getSourceDirectory(): Directory
+    {
+        return $this->sourceDirectory;
+    }
+
+    /**
+     * @Step
+     * @description
+     * ### Set Destination directory
+     *
+     * Destination name will be {source}-{THIS YEAR} by default
+     * if you don't provide a value. Destination name will be
+     * {source}-{THIS YEAR} by default if you don't provide a value.
+     *
+     *
+     * @param \D9ify\Site\Directory $destinationDirectory
+     */
+    public function setDestinationDirectory(Directory $destinationDirectory): void
+    {
+        $this->destinationDirectory = $destinationDirectory;
+    }
+
+    /**
+     * @return \D9ify\Site\Directory
+     */
+    public function getDestinationDirectory(): Directory
+    {
+        return $this->destinationDirectory;
+    }
+
+
+    /**
+     * @Step
+     * @description
      * ### Clone Source & Destination.
      *
      * Clone both sites to folders inside this root directory.
@@ -244,14 +228,16 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @description This script searches for every {modulename}.info.yml. If that
+     * @Step
+     * @description
+     * ### Move over Contrib
+     *
+     * Spelunk the old site for MODULE.info.yaml and after reading
+     * those files. This step searches for every {modulename}.info.yml. If that
      * file has a 'project' proerty (i.e. it's been thru the automated services at
      * drupal.org), it records that property and version number and ensures
      * those values are in the composer.json 'require' array. Your old composer
      * file will re renamed backup-*-composer.json.
-     *
-     *
-     *
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
@@ -289,23 +275,15 @@ class ProcessCommand extends Command
         return 0;
     }
 
-    /**
-     * @return \D9ify\Site\Directory
-     */
-    public function getDestinationDirectory(): Directory
-    {
-        return $this->destinationDirectory;
-    }
 
     /**
-     * @param \D9ify\Site\Directory $destinationDirectory
-     */
-    public function setDestinationDirectory(Directory $destinationDirectory): void
-    {
-        $this->destinationDirectory = $destinationDirectory;
-    }
-
-    /**
+     * @Step
+     * @description
+     * ### JS contrib/drupal libraries
+     *
+     * Process /libraries folder if exists & Add ES Libraries to the composer
+     * install payload
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
@@ -388,6 +366,10 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @Step
+     * @description
+     * ### Write the composer file.
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
@@ -423,6 +405,19 @@ class ProcessCommand extends Command
         }
         $output->writeln("The composer Files were not changed");
         return 0;
+    }
+
+    /**
+     * @Step
+     * @description
+     * ### composer install
+     *
+     * Exception will be thrown if install fails.
+     *
+     */
+    public function destinationComposerInstall()
+    {
+        $this->getDestinationDirectory()->install($output);
     }
 
     /**
