@@ -13,17 +13,20 @@
     "autoload": {
         "psr-4": {
             "D9ify\\" : "src/D9ify",
+			"D9ify\\Commands\\" : "src/D9ify/Commands",
 			"D9ify\\Composer\\" : "src/D9ify/Composer",
 			"D9ify\\Exceptions\\" : "src/D9ify/Exceptions",
-			"D9ify\\Site\\": "src/D9ify/Site"
-        }
+			"D9ify\\Site\\": "src/D9ify/Site",
+			"D9ify\\Utility\\": "src/D9ify/Utility"
+		}
     },
     "require": {
 		"php": ">=7.4.0",
-        "symfony/console": "^4",
+		"ext-json": "*",
+		"symfony/console": "^4",
         "composer/composer": "^2",
         "rogervila/array-diff-multidimensional": "^2",
-        "phpunit/phpunit": "^10",
+        "phpunit/phpunit": "^9",
         "squizlabs/php_codesniffer": "^4",
         "composer/semver": "^3",
         "symfony/serializer": "^5",
@@ -35,12 +38,15 @@
 	"suggest": {
 		"ext-zip": "Enabling the zip extension allows you to unzip archives",
 		"ext-zlib": "Allow gzip compression of HTTP requests",
-		"ext-json": "*"
+		"ext-yaml": "Native parsing of Yaml can speed a drupal install up to 5%"
 	},
     "scripts": {
-        "d9ify": [
+        "d9ify:process": [
             "\\D9ify\\Application::process"
         ],
+		"d9ify:document": [
+			"\\D9ify\\Application::document"
+		],
         "test": [
 			"@test:unit",
 			"@test:functional"
@@ -69,6 +75,7 @@
 			"Tooly\\ScriptHandler::installPharTools"
 		],
 		"post-update-cmd": [
+			"bash devops/setup-precommit.sh",
 			"Tooly\\ScriptHandler::installPharTools"
 		]
     },

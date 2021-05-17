@@ -1,6 +1,6 @@
 <?php
 
-namespace D9ify;
+namespace D9ify\Commands;
 
 use Composer\IO\IOInterface;
 use D9ify\Exceptions\D9ifyExceptionBase;
@@ -61,6 +61,13 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @Step
+     * @description
+     * ### Set Source and Destination.
+     *
+     * Source Param is not optional and needs to be
+     * a pantheon site ID or name.
+     *
      * @param \D9ify\Site\Directory $sourceDirectory
      */
     public function setSourceDirectory(Directory $sourceDirectory): void
@@ -69,12 +76,12 @@ class ProcessCommand extends Command
     }
 
     /**
-     *
+     * Configure.
      */
     protected function configure()
     {
         $this
-            ->setName('d9ify')
+            ->setName('d9ify:process')
             ->setDescription('The magic d9ificiation machine')
             ->addArgument('source', InputArgument::REQUIRED, 'The pantheon site name or ID of the site')
             ->setHelp(static::$HELP_TEXT)
@@ -103,25 +110,18 @@ class ProcessCommand extends Command
     {
         try {
             $output->writeln(static::$HELP_TEXT);
-            /**
-             * Step 1. Set Source and Destination.
-             *
-             * Source Param is not optional and needs to be
-             * a pantheon site ID or name.
-             *
-             */
+
             $this->setSourceDirectory(
                 Directory::factory(
                     $input->getArgument('source'),
                     $output
                 )
             );
-            /**
-             * Step 1b. Grab the org if there is one
-             */
             $org = $this->getSourceDirectory()->getInfo()->getOrganization();
             /**
-             * Step 1c. Do the same for destination
+             * @Step
+             * @description
+             * ### Do the same for destination
              *
              * Destination name will be {source}-{THIS YEAR} by default
              * if you don't provide a value. Destination name will be
@@ -136,52 +136,68 @@ class ProcessCommand extends Command
                     $org
                 )
             );
-            /**
-             * Step 2: Clone Source & Destination.
-             *
-             * Clone both sites to folders inside this root directory.
-             */
-            $this->getSourceDirectory()->ensure(false);
-            $this->getDestinationDirectory()->ensure(true);
+
             $this->copyRepositoriesFromSource($input, $output);
             /**
-             * Step 3: Move over Contrib
+             * @Step
+             * @description
+             * ### Move over Contrib
              *
              * Spelunk the old site for MODULE.info.yaml and after reading
              * those files.
+             *
              */
             $this->updateDestModulesAndThemesFromSource($input, $output);
             /**
-             * Step 4: web/libraries folder (JS contrib/drupal libraries)
+             * @Step
+             * @description
+             * ### JS contrib/drupal libraries
              *
              * Process /libraries folder if exists & Add ES Libraries to the composer
              * install payload
              */
             $this->updateDestEsLibrariesFromSource($input, $output);
             /**
-             * Step 5: ...and GO!
-             *
-             * Write the composer file .
+             * @Step
+             * @description
+             * ### Write the composer file.
              */
             $this->writeComposer($input, $output);
             /**
-             * Step 6: Attempt to do an composer install
+             * @Step
+             * @description
+             * ### composer install
              *
              * Exception will be thrown if install fails.
+             *
              */
             $this->getDestinationDirectory()->install($output);
             /**
-             * Step 7: Custom Code
+             * @Step
+             * @description
+             * ### Copy Custom Code.
              *
              * This step looks for {MODULENAME}.info.yml files that also have "custom"
              * in the path. If they have THEME in the path it copies them to web/themes/custom.
              * If they have "module" in the path, it copies the folder to web/modules/custom.
+             *
              */
             $this->copyCustomCode($input, $output);
+            /**
+             * @Step
+             * @description
+             * ### Ensure pantheon.yaml has preferred values.
+             */
+            $this->copyConfigFiles($input, $output);
+            /**
+             * @Setp
+             * @description
+             * ### Download Database backup.
+             */
+
+
+
             // TODO:
-            // 1. Spelunk custom code in new site and fix module
-            //    version numbers (+ ^9) if necessary.
-            // 1. Copy config files.
             // 1. commit-push code/config/composer additions.
             // 1. Rsync remote files to local directory
             // 1. Rsync remote files back up to new site
@@ -206,11 +222,21 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @Step
+     * @description
+     * ### Clone Source & Destination.
+     *
+     * Clone both sites to folders inside this root directory.
+     * If destination does not exist, create the using Pantheon's
+     * Terminus API. If destination doesn't exist, Create it.
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
     protected function copyRepositoriesFromSource(InputInterface $input, OutputInterface $output)
     {
+        $this->getSourceDirectory()->ensure(false);
+        $this->getDestinationDirectory()->ensure(true);
         $this->destinationDirectory->getComposerObject()->setRepositories(
             $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'] ?? []
         );
@@ -233,21 +259,23 @@ class ProcessCommand extends Command
      */
     protected function updateDestModulesAndThemesFromSource(InputInterface $input, OutputInterface $output)
     {
+        /**
+         * https://regex101.com/r/60GonN/1
+         * Get every .info.y{a}ml file in source.
+         */
         $infoFiles = $this->sourceDirectory->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
         $toMerge = [];
         $composerFile = $this->getDestinationDirectory()
             ->getComposerObject();
         foreach ($infoFiles as $fileName => $fileInfo) {
-            $contents = file_get_contents($fileName);
-            preg_match('/project\:\ ?\'(.*)\'$/m', $contents, $projectMatches);
-            preg_match('/version\:\ ?\'(.*)\'$/m', $contents, $versionMatches);
-            if (is_array($projectMatches) && isset($projectMatches[1])) {
-                if ($projectMatches[1]) {
-                        $composerFile->addRequirement(
-                            "drupal/" . $projectMatches[1],
-                            "^" . str_replace("8.x-", "", $versionMatches[1])
-                        );
-                }
+            $contents = yaml_parse_file($fileName);
+            $project = $contents['project'];
+            $version = $contents['version'];
+            if (!empty($project) && !empty($version)) {
+                $composerFile->addRequirement(
+                    "drupal/" . $project,
+                    "^" . str_replace("8.x-", "", $version)
+                );
             }
         }
         $output->write(PHP_EOL);
@@ -285,6 +313,11 @@ class ProcessCommand extends Command
      */
     protected function updateDestEsLibrariesFromSource(InputInterface $input, OutputInterface $output)
     {
+        /**
+         * @extra
+         * https://regex101.com/r/EHYzcz/1
+         * Get every package.json in the libraries folder.
+         */
         $fileList = $this->sourceDirectory->spelunkFilesFromRegex('/libraries\/[0-9a-z-]*\/(package\.json$)/', $output);
         $repos = $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'];
         $composerFile = $this->getDestinationDirectory()->getComposerObject();
@@ -409,15 +442,27 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
+     * @return bool
      */
     public function copyCustomCode(InputInterface $input, OutputInterface $output) :bool
     {
-        $this->getDestinationDirectory()->ensureCustomCodeFoldersExist($input, $output);
         $failure_list = [];
+        /**
+         * @extra
+         * REGEX: https://regex101.com/r/kUWCou/1
+         * get every .info file with "custom" in the path, e.g.
+         * ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
+         * ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
+         * ✓  web/modules/custom/milken_base/milken_base.info.yaml
+         */
         $infoFiles = $this
             ->sourceDirectory
-            ->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
+            ->spelunkFilesFromRegex('/custom\/[0-9a-z-_]*\/[0-9a-z-_]*(\.info\.yml|\.info\.yaml?)/', $output);
+        $this->getDestinationDirectory()->ensureCustomCodeFoldersExist($input, $output);
+
         foreach ($infoFiles as $fileName => $fileInfo) {
             try {
                 $contents = Yaml::parse(file_get_contents($fileName));
@@ -427,22 +472,26 @@ class ProcessCommand extends Command
                 }
                 continue;
             }
+
+            // Skip any info file that has the "project" setting because it will be in contrib.
+            // Skip any info file that doesn't have a "type" setting.
             if (!isset($contents['type'])) {
                 continue;
             }
             $sourceDir = dirname($fileInfo->getRealPath());
             switch ($contents['type']) {
                 case "module":
-                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/sites/modules/custom";
+                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/modules/custom";
                     break;
 
                 case "theme":
-                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/sites/themes/custom";
+                    $destination = $this->getDestinationDirectory()->getClonePath() . "/web/themes/custom";
                     break;
 
                 default:
                     continue 2;
             }
+
             $command = sprintf(
                 "cp -Rf %s %s",
                 $sourceDir,
@@ -451,6 +500,7 @@ class ProcessCommand extends Command
             if ($output->isVerbose()) {
                 $output->writeln($command);
             }
+
             exec(
                 $command,
                 $result,
@@ -458,6 +508,14 @@ class ProcessCommand extends Command
             );
             if ($status !== 0) {
                 $failure_list[$fileName] = $result;
+            }
+            if (!isset($contents['core'])) {
+                $contents['core'] = "^9";
+            }
+            // If the module does not have d9 in the "core" module value, add it
+            if (isset($contents['core']) && strpos($contents['core'], "9") === false) {
+                $contents['core'] .= "| ^9";
+                file_put_contents($fileName, Yaml::dump($contents, 1, 5));
             }
         }
         $output->write(PHP_EOL);
@@ -481,5 +539,21 @@ class ProcessCommand extends Command
             }
         }
         return true;
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    public function copyConfigFiles(InputInterface $input, OutputInterface $output)
+    {
+        /**
+         * https://regex101.com/r/vWIStG/1
+         * Try to find the config directory.
+         */
+        $configDirectory = $this->getSourceDirectory()
+            ->spelunkFilesFromRegex('/[!^core]\/(system\.site\.yml$)/', $output);
+        print_r($configDirectory);
+        exit();
     }
 }

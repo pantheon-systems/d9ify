@@ -303,21 +303,56 @@ class Directory
         $this->output = $output;
     }
 
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
     public function ensureCustomCodeFoldersExist(InputInterface $input, OutputInterface $output)
     {
-        if (!file_exists($this->getClonePath() . "/web/sites/themes/custom")) {
+        $output->write(PHP_EOL);
+        $custom = $this->getClonePath() . "/web/themes/custom";
+        $output->writeln(sprintf('Ensure custom theme folder exists: %s', $custom));
+        if (!file_exists($custom)) {
             mkdir(
-                $this->getClonePath() . "/web/sites/themes/custom",
+                $custom,
                 0777,
                 true
             );
         }
-        if (!file_exists($this->getClonePath() . "/web/sites/modules/custom")) {
+        $custom = $this->getClonePath() . "/web/modules/custom";
+        $output->writeln(sprintf('Ensure custom modules folder exists: %s', $custom));
+        if (!file_exists($custom)) {
             mkdir(
-                $this->getClonePath() . "/web/sites/modules/custom",
+                $custom,
                 0777,
                 true
             );
         }
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    public function ensurePantheonYamlValues(InputInterface $input, OutputInterface $output)
+    {
+        $pantheonYaml = [];
+        $yamlFile = $this->clonePath . "/pantheon.yaml";
+        if (is_file($yamlFile)) {
+            $pantheonYaml = yaml_parse_file($yamlFile);
+        }
+        $pantheonYaml["database"]['version'] = "10.4";
+        $pantheonYaml["build_step"] = true;
+        $pantheonYaml["drush_version"] = 10;
+        $pantheonYaml['protected_web_paths'] = [
+           "/private/",
+           "/sites/default/files/private/",
+            "/sites/default/files/config/"
+        ];
+        $output->writeln([
+            "Updating Pantheon.yaml file in destination directory:",
+            print_r($pantheonYaml, true)
+        ]);
+        yaml_emit_file($yamlFile, $pantheonYaml);
     }
 }
