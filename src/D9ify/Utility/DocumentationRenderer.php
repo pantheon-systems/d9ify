@@ -33,9 +33,8 @@ class DocumentationRenderer
     {
         if (isset($this->block->step)) {
             return [
-                PHP_EOL .
-                "1. STEP " . PHP_EOL .
-                "***************************************" . PHP_EOL ,
+                "### {$this->block->step[0]['number']}" .
+                PHP_EOL . PHP_EOL .
                 $this->getDescription() . PHP_EOL,
                 PHP_EOL,
             ];
@@ -44,7 +43,9 @@ class DocumentationRenderer
             return [
                 "# {$this->block->name[0]}" . PHP_EOL,
                 $this->getDescription(null) . PHP_EOL,
-                "USAGE: ```{$this->block->usage[0]}```" . PHP_EOL
+                "## USAGE " . PHP_EOL ,
+                "  ```{$this->block->usage[0]}```" . PHP_EOL ,
+                "## STEPS" . PHP_EOL . PHP_EOL
             ];
         }
         return null;
@@ -59,7 +60,7 @@ class DocumentationRenderer
     }
 
 
-    public function getDescription($delimiter = "  ")
+    public function getDescription($delimiter = " ")
     {
 
         if (isset($this->block->description)) {

@@ -148,10 +148,8 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Set Source and Destination.
      * @description
-     * ### Set Source and Destination.
-     *
      * Source Param is not optional and needs to be
      * a pantheon site ID or name.
      *
@@ -171,10 +169,8 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Set Destination directory
      * @description
-     * ### Set Destination directory
-     *
      * Destination name will be {source}-{THIS YEAR} by default
      * if you don't provide a value. Destination name will be
      * {source}-{THIS YEAR} by default if you don't provide a value.
@@ -197,10 +193,8 @@ class ProcessCommand extends Command
 
 
     /**
-     * @step *
+     * @step Clone Source & Destination.
      * @description
-     * ### Clone Source & Destination.
-     *
      * Clone both sites to folders inside this root directory.
      * If destination does not exist, create the using Pantheon's
      * Terminus API. If destination doesn't exist, Create it.
@@ -218,10 +212,8 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Move over Contrib
      * @description
-     * ### Move over Contrib
-     *
      * Spelunk the old site for MODULE.info.yaml and after reading
      * those files. This step searches for every {modulename}.info.yml. If that
      * file has a 'project' proerty (i.e. it's been thru the automated services at
@@ -267,12 +259,10 @@ class ProcessCommand extends Command
 
 
     /**
-     * @step *
+     * @step JS contrib/drupal libraries
      * @description
-     * ### JS contrib/drupal libraries
-     *
      * Process /libraries folder if exists & Add ES Libraries to the composer
-     * install payload
+     * install payload.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
@@ -356,9 +346,9 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Write the composer file.
      * @description
-     * ### Write the composer file.
+     * Write the composer file to disk.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
@@ -398,10 +388,8 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step composer install
      * @description
-     * ### composer install
-     *
      * Exception will be thrown if install fails.
      *
      */
@@ -427,10 +415,8 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Copy Custom Code
      * @description
-     * ### Copy Custom Code.
-     *
      * This step looks for {MODULENAME}.info.yml files that also have "custom"
      * in the path. If they have THEME in the path it copies them to web/themes/custom.
      * If they have "module" in the path, it copies the folder to web/modules/custom.
@@ -535,9 +521,9 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step *
+     * @step Ensure pantheon.yaml has preferred values
      * @description
-     * ### Ensure pantheon.yaml has preferred values.
+     * Write known values to the pantheon.yml file.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
