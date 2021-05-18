@@ -192,9 +192,9 @@ class Directory
     /**
      * @param $regex
      *
-     * @return array
+     * @return \SplFileInfo[]
      */
-    public function spelunkFilesFromRegex($regex, OutputInterface $output)
+    public function spelunkFilesFromRegex($regex, OutputInterface $output): array
     {
         $output->writeln(sprintf("Searching files for regex: %s", $regex));
         $allFiles = iterator_to_array(

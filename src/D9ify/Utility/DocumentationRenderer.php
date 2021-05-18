@@ -33,7 +33,7 @@ class DocumentationRenderer
     {
         if (isset($this->block->step)) {
             $lines = [
-                "#### {$this->block->step[0]['number']}" .
+                $this->getStep() .
                 PHP_EOL . PHP_EOL .
                 $this->getDescription() . PHP_EOL,
                 $this->getRegex() ,
@@ -60,12 +60,17 @@ class DocumentationRenderer
         return join(PHP_EOL, $this->serialize());
     }
 
+    public function getStep()
+    {
+        return "#### ===> " . $this->block->step[0]['name'];
+    }
+
     /**
      * @param string $delimiter
      *
      * @return string|null
      */
-    public function getRegex($delimiter = "   ")
+    public function getRegex($delimiter = "       ")
     {
         if (isset($this->block->regex)) {
             $lines = [];
@@ -88,7 +93,7 @@ class DocumentationRenderer
      *
      * @return string|null
      */
-    public function getDescription($delimiter = " ") : ?string
+    public function getDescription($delimiter = "   ") : ?string
     {
         if (isset($this->block->description)) {
             $lines = [];

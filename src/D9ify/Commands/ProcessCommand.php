@@ -16,6 +16,23 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * @name d9ify
  * @description
+ *
+ * This project is for you if you meet the following criterion:
+ *
+ * • You're the proud owner of or have inherited a hot mess of a website
+ *
+ * • You're using drupal 8
+ *
+ * • You're hosting the hot mess site on pantheon
+ *
+ * [ NOTE ]:
+ *
+ * • Integrating nodejs and babel is outside scope for now. They can
+ *   be used and it will be outlined with another video.
+ *
+ * • SCSS/SASS stylesheet compilation can be done by adding the library and command
+ *   to the correct composer post-install command. We'll go over that at the end.
+ *
  * The idea behind this site is that there's a single command to create a new Pantheon
  * D9 site from a messy old D8 site that may or may not be using composer to manage
  * it's dependencies.
@@ -120,14 +137,10 @@ class ProcessCommand extends Command
             $this->updateDestModulesAndThemesFromSource($input, $output);
             $this->updateDestEsLibrariesFromSource($input, $output);
             $this->writeComposer($input, $output);
-            $this->destinationComposerInstall();
+            $this->destinationComposerInstall($input, $output);
             $this->copyCustomCode($input, $output);
             $this->copyConfigFiles($input, $output);
-            /**
-             * @step
-             * @description
-             * ### Download Database backup.
-             */
+
 
 
 
@@ -243,14 +256,16 @@ class ProcessCommand extends Command
         $composerFile = $this->getDestinationDirectory()
             ->getComposerObject();
         foreach ($infoFiles as $fileName => $fileInfo) {
-            $contents = yaml_parse_file($fileName);
-            $project = $contents['project'];
-            $version = $contents['version'];
-            if (!empty($project) && !empty($version)) {
-                $composerFile->addRequirement(
-                    "drupal/" . $project,
-                    "^" . str_replace("8.x-", "", $version)
-                );
+            if ($fileInfo->isFile()) {
+                $contents = file_get_contents($fileName);
+                preg_match('/project\:\ ?\'(.*)\'$/m', $contents, $projectMatches);
+                preg_match('/version\:\ ?\'(.*)\'$/m', $contents, $versionMatches);
+                if (is_array($projectMatches) && isset($projectMatches[1])) {
+                    $composerFile->addRequirement(
+                        "drupal/" . $projectMatches[1],
+                        "^" . str_replace("8.x-", "", $versionMatches[1])
+                    );
+                }
             }
         }
         $output->write(PHP_EOL);
@@ -401,9 +416,10 @@ class ProcessCommand extends Command
      * Exception will be thrown if install fails.
      *
      */
-    public function destinationComposerInstall()
+    public function destinationComposerInstall(InputInterface $input, OutputInterface $output)
     {
-        $this->getDestinationDirectory()->install($output);
+        $this->getDestinationDirectory()
+            ->install($output);
     }
 
     /**
@@ -439,7 +455,7 @@ class ProcessCommand extends Command
      *
      * get every .info file with "custom" in the path, e.g.
      *
-     * |---|------------------------------------------------------------|
+     * |---|----------------------------------------------------------*--|
      * | ✓ | web/modules/custom/milken_migrate/milken_migrate.info.yaml |
      * | ✗ | web/modules/contrib/entity_embed/entity_embed.info.yaml    |
      * | ✓ | web/modules/custom/milken_base/milken_base.info.yaml       |
@@ -453,7 +469,7 @@ class ProcessCommand extends Command
             ->sourceDirectory
             ->spelunkFilesFromRegex('/custom\/[0-9a-z-_]*\/[0-9a-z-_]*(\.info\.yml|\.info\.yaml?)/', $output);
         $this->getDestinationDirectory()->ensureCustomCodeFoldersExist($input, $output);
-
+        $output->writeln("Copying custom modules/themes...");
         foreach ($infoFiles as $fileName => $fileInfo) {
             try {
                 $contents = Yaml::parse(file_get_contents($fileName));
@@ -539,16 +555,89 @@ class ProcessCommand extends Command
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @extra
+     * [REGEX](https://regex101.com/r/vWIStG/1)
+     *
+     *  Try to find the config directory based on the system.site.yml
      */
     public function copyConfigFiles(InputInterface $input, OutputInterface $output)
     {
         /**
-         * https://regex101.com/r/vWIStG/1
-         * Try to find the config directory.
+         *
+         *
          */
-        $configDirectory = $this->getSourceDirectory()
-            ->spelunkFilesFromRegex('/[!^core]\/(system\.site\.yml$)/', $output);
-        print_r($configDirectory);
-        exit();
+        $configDirectory = @dirname(
+            reset($this->getSourceDirectory()
+                ->spelunkFilesFromRegex('/[!^core]\/(system\.site\.yml$)/', $output))
+        ) ?? null;
+
+        if ($configDirectory === null) {
+            $output->writeln([
+                "A config directory was not found for this site. ",
+                "Expectation was that it was in `{site root directory}/config`"
+            ]);
+            return false;
+        }
+        exec(
+            sprintf(
+                "mkdir -p %s",
+                $this->getDestinationDirectory()->getClonePath() ."/config/sync"
+            ),
+            $result,
+            $status
+        );
+        exec(
+            sprintf(
+                "cp -R %s %s",
+                $configDirectory . "/*.yaml",
+                $this->getDestinationDirectory()->getClonePath() . "/config/sync"
+            ),
+            $result,
+            $status
+        );
+        if ($status !== 0) {
+            $output->writeln($result);
+        }
+    }
+
+    /**
+     * @step Create a backup of the site database and download.
+     * @description
+     * Download a copy of the latest version of the database.
+     *
+     * | WARNING                                                                     |
+     * |-----------------------------------------------------------------------------|
+     * | If pantheon terminus integration is setup incorrectly on this machine,      |
+     * | this step will fail.                                                        |
+     *
+     *
+     */
+    public function downloadDatabase(InputInterface $input, OutputInterface $output)
+    {
+        $root = dirname(\Composer\Factory::getComposerFile());
+        exec(
+            sprintf(
+                "terminus backup:create %s --element=database --yes",
+                $this->getSourceDirectory()->getSiteInfo()->getId()
+            ),
+            $result,
+            $status
+        );
+        if ($status !== 0) {
+            $output->writeln($result);
+        }
+
+        exec(
+            sprintf(
+                "terminus backup:get %s --element=database --yes --to='%s'",
+                $this->getSourceDirectory()->getSiteInfo()->getId(),
+                $root . "/" . $this->getSourceDirectory()->getSiteInfo()->getName() ?? "backup" . ".tgz"
+            ),
+            $result,
+            $status
+        );
+        if ($status !== 0) {
+            $output->writeln($result);
+        }
     }
 }

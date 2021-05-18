@@ -78,7 +78,7 @@ class DocBlock
     public static $vectors = array(
         'param' => ['type', 'var', 'desc'],
         'return' => ['type', 'desc'],
-        'step' =>['number'],
+        'step' =>['name'],
     );
 
     /**
