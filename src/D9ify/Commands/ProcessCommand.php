@@ -22,7 +22,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  *
  * | WARNING                                                                     |
- * -------------------------------------------------------------------------------
+ * |-----------------------------------------------------------------------------|
  * | THIS PROJECT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE   |
  * | ERROR CHECKING. PLEASE USE AT YOUR OWN RISK.                                |
  * | The guide to use this file is in /README.md                                 |
@@ -439,9 +439,11 @@ class ProcessCommand extends Command
      *
      * get every .info file with "custom" in the path, e.g.
      *
-     * ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
-     * ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
-     * ✓  web/modules/custom/milken_base/milken_base.info.yaml
+     * |---|------------------------------------------------------------|
+     * | ✓ | web/modules/custom/milken_migrate/milken_migrate.info.yaml |
+     * | ✗ | web/modules/contrib/entity_embed/entity_embed.info.yaml    |
+     * | ✓ | web/modules/custom/milken_base/milken_base.info.yaml       |
+     *
      */
     public function copyCustomCode(InputInterface $input, OutputInterface $output) :bool
     {
