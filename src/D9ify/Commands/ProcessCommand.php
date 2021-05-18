@@ -140,16 +140,11 @@ class ProcessCommand extends Command
             $this->destinationComposerInstall($input, $output);
             $this->copyCustomCode($input, $output);
             $this->copyConfigFiles($input, $output);
-
-
-
-
-            // TODO:
-            // 1. commit-push code/config/composer additions.
-            // 1. Rsync remote files to local directory
-            // 1. Rsync remote files back up to new site
-            // 1. Download database backup
-            // 1. Restore Database backup to new site
+            $this->downloadDatabase($input, $output);
+            $this->restoreDatabaseToDestinationSite($input, $output);
+            $this->downloadSourceSiteFilesDirectory($input, $output);
+            $this->unpackSiteFilesAndRsyncToDestination($input, $output);
+            $this->checkinVersionManagedFilesAndPush($input, $output);
         } catch (D9ifyExceptionBase $d9ifyException) {
             // TODO: Composer install exception help text
             $output->writeln((string) $d9ifyException);
@@ -223,11 +218,26 @@ class ProcessCommand extends Command
      */
     protected function copyRepositoriesFromSource(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln([
+            "===> Ensuring source and destination folders exist.",
+            PHP_EOL,
+            "*********************************************************************",
+            "**     If you've never accessed the site before you may be         **",
+            "**  asked to accept the site's fingerprint. Type 'yes' when asked  **",
+            "*********************************************************************",
+            PHP_EOL,
+        ]);
         $this->getSourceDirectory()->ensure(false);
         $this->getDestinationDirectory()->ensure(true);
         $this->destinationDirectory->getComposerObject()->setRepositories(
             $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'] ?? []
         );
+        $output->writeln([
+            "*********************************************************************",
+            sprintf("Source Folder: %s", $this->getSourceDirectory()->getClonePath()),
+            sprintf("Destination Folder: %s", $this->getDestinationDirectory()->getClonePath()),
+            "*********************************************************************",
+        ]);
     }
 
     /**
@@ -250,7 +260,7 @@ class ProcessCommand extends Command
      */
     protected function updateDestModulesAndThemesFromSource(InputInterface $input, OutputInterface $output)
     {
-
+        $output->writeln("===> Updating Getting Modules and Themes from source.");
         $infoFiles = $this->sourceDirectory->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
         $toMerge = [];
         $composerFile = $this->getDestinationDirectory()
@@ -299,6 +309,7 @@ class ProcessCommand extends Command
      */
     protected function updateDestEsLibrariesFromSource(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln("===> Updating ES /libraries from source directory");
         $fileList = $this->sourceDirectory->spelunkFilesFromRegex('/libraries\/[0-9a-z-]*\/(package\.json$)/', $output);
         $repos = $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'];
         $composerFile = $this->getDestinationDirectory()->getComposerObject();
@@ -321,7 +332,7 @@ class ProcessCommand extends Command
                 ]);
                 continue;
             }
-            $array = explode("/", $repoString);
+            $array = explode(DIRECTORY_SEPARATOR, $repoString);
             $libraryName = @array_pop($array);
             if (isset($repos[$libraryName])) {
                 $composerFile->addRequirement(
@@ -380,11 +391,16 @@ class ProcessCommand extends Command
      */
     protected function writeComposer(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln("===> Writing Composer file to destination");
+
         $output->writeln([
             "*********************************************************************",
             "* These changes are being applied to the destination site composer: *",
             "*********************************************************************",
         ]);
+        $this->getDestinationDirectory()
+            ->getComposerObject()
+            ->addRequirement("drupal/core", "^9.1");
         $output->writeln(print_r($this->destinationDirectory
                                      ->getComposerObject()
                                      ->getDiff(), true));
@@ -402,11 +418,13 @@ class ProcessCommand extends Command
         $question = new ConfirmationQuestion(" Type '(y)es' to continue: ", false);
         $helper = $this->getHelper('question');
         if ($helper->ask($input, $output, $question)) {
-            return $this->getDestinationDirectory()
+             $this->getDestinationDirectory()
                 ->getComposerObject()
                 ->write();
+            $output->writeln("===> Composer File Written");
+            return true;
         }
-        $output->writeln("The composer Files were not changed");
+        $output->writeln("===> The composer File was not changed");
         return 0;
     }
 
@@ -463,13 +481,14 @@ class ProcessCommand extends Command
      */
     public function copyCustomCode(InputInterface $input, OutputInterface $output) :bool
     {
+        $output->writeln("===> Copying Custom Code");
+
         $failure_list = [];
 
         $infoFiles = $this
             ->sourceDirectory
             ->spelunkFilesFromRegex('/custom\/[0-9a-z-_]*\/[0-9a-z-_]*(\.info\.yml|\.info\.yaml?)/', $output);
         $this->getDestinationDirectory()->ensureCustomCodeFoldersExist($input, $output);
-        $output->writeln("Copying custom modules/themes...");
         foreach ($infoFiles as $fileName => $fileInfo) {
             try {
                 $contents = Yaml::parse(file_get_contents($fileName));
@@ -545,6 +564,8 @@ class ProcessCommand extends Command
                 $output->write(print_r($failure_list, true));
             }
         }
+        $output->writeln("===> Done Copying Custom Code");
+
         return true;
     }
 
@@ -562,10 +583,8 @@ class ProcessCommand extends Command
      */
     public function copyConfigFiles(InputInterface $input, OutputInterface $output)
     {
-        /**
-         *
-         *
-         */
+        $output->writeln("===> Copying Config Files");
+
         $configDirectory = @dirname(
             reset($this->getSourceDirectory()
                 ->spelunkFilesFromRegex('/[!^core]\/(system\.site\.yml$)/', $output))
@@ -589,7 +608,7 @@ class ProcessCommand extends Command
         exec(
             sprintf(
                 "cp -R %s %s",
-                $configDirectory . "/*.yaml",
+                $configDirectory . "/*.yml",
                 $this->getDestinationDirectory()->getClonePath() . "/config/sync"
             ),
             $result,
@@ -598,6 +617,11 @@ class ProcessCommand extends Command
         if ($status !== 0) {
             $output->writeln($result);
         }
+        $output->writeln([
+            PHP_EOL,
+            "===> Done Copying Config Files"
+        ]);
+        return true;
     }
 
     /**
@@ -614,10 +638,11 @@ class ProcessCommand extends Command
      */
     public function downloadDatabase(InputInterface $input, OutputInterface $output)
     {
-        $root = dirname(\Composer\Factory::getComposerFile());
+        $output->writeln("===> Downloading Database");
+        $root = dirname(\Composer\Factory::getComposerFile()) . "/local-copies";
         exec(
             sprintf(
-                "terminus backup:create %s --element=database --yes",
+                "terminus backup:create %s.live --element=database --yes",
                 $this->getSourceDirectory()->getSiteInfo()->getId()
             ),
             $result,
@@ -629,9 +654,10 @@ class ProcessCommand extends Command
 
         exec(
             sprintf(
-                "terminus backup:get %s --element=database --yes --to='%s'",
+                "terminus backup:get %s.live --element=database --yes --to='%s'",
                 $this->getSourceDirectory()->getSiteInfo()->getId(),
-                $root . "/" . $this->getSourceDirectory()->getSiteInfo()->getName() ?? "backup" . ".tgz"
+                $root . DIRECTORY_SEPARATOR .
+                ($this->getSourceDirectory()->getSiteInfo()->getName() ?? "backup") . ".tgz"
             ),
             $result,
             $status
@@ -639,5 +665,56 @@ class ProcessCommand extends Command
         if ($status !== 0) {
             $output->writeln($result);
         }
+    }
+
+    /**
+     * @step TODO: restore database backup to destination site
+     * @description
+     * mysql {NEWSITE DATABASE CONNECTION INFO} < backup.tgz
+     *
+     */
+    public function restoreDatabaseToDestinationSite(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln("===> TODO: Restore database to destination");
+    }
+
+    /**
+     * @step TODO: Download backup of source files
+     * @description
+     * Using terminus, get a copy of the sites/default/files folder
+     *
+     * | WARNING                                                                     |
+     * |-----------------------------------------------------------------------------|
+     * | We're downloading a backup rather than rsyncing from the source.            |
+     * | This is going to have a tendency to be faster with site archives > 1gb      |
+     *
+     *
+     */
+    public function downloadSourceSiteFilesDirectory(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln("===> TODO: download sites/default/files from source");
+    }
+
+    /**
+     * @step TODO: unpack site files archive and rsync them up.
+     * @description
+     * There's a hard limit to the size archive you can upload. We'll do an rysnc
+     * but if/when it times out, we need a way of restarting the rsync.
+     *
+     */
+    public function unpackSiteFilesAndRsyncToDestination(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln("===> TODO: unpack files archive and rsync to destination");
+    }
+
+    /**
+     * @step TODO: check in the version-managed files
+     * @description
+     * Push them up to dev environment.
+     *
+     */
+    public function checkinVersionManagedFilesAndPush(InputInterface $input, OutputInterface $output)
+    {
+        $output->writeln("===> TODO: Check-in Version-managed files and push.");
     }
 }

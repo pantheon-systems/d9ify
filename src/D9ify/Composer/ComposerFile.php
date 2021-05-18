@@ -223,26 +223,16 @@ class ComposerFile extends JsonFile
      */
     public static function getSchemaRef(): array
     {
-        return ['$ref' => static::getSchemaFile()];
+        return ['$ref' => static::getSchemaFilePath()];
     }
 
     /**
-     * @param string|null $schemaFile
      *
      * @return string|null
      */
-    public static function getSchemaFile(string $schemaFile = null)
+    public static function getSchemaFilePath()
     {
-        if (null === $schemaFile) {
-            $schemaFile = getcwd() . "/vendor/composer/composer/res/composer-schema.json";
-        }
-
-        // Prepend with file:// only when not using a special schema already (e.g. in the phar)
-        if (false === strpos($schemaFile, '://')) {
-            $schemaFile = 'file://' . $schemaFile;
-        }
-
-        return $schemaFile;
+        return dirname(\Composer\Factory::getComposerFile()) . "/vendor/composer/composer/res/composer-schema.json";
     }
 
     /**
@@ -257,7 +247,7 @@ class ComposerFile extends JsonFile
                 JSON_UNESCAPED_LINE_TERMINATORS +
             JSON_UNESCAPED_SLASHES
         ) ?? "{}";
-        return str_replace('\/', "/", $toReturn);
+        return str_replace('\/', DIRECTORY_SEPARATOR, $toReturn);
     }
 
     /**
@@ -292,7 +282,7 @@ class ComposerFile extends JsonFile
     public static function getSchema(string $schemaFile = null): \stdClass
     {
         return json_decode(
-            file_get_contents(static::getSchemaFile()),
+            file_get_contents(realpath(static::getSchemaFilePath())),
             false,
             512,
             JSON_THROW_ON_ERROR
@@ -320,13 +310,15 @@ class ComposerFile extends JsonFile
      */
     public function getRequire(): array
     {
-        return array_combine(
+        $toReturn = array_combine(
             array_keys($this->requirements),
             array_map(function ($item) {
                 return (string)$item;
             },
             $this->requirements)
         );
+        ksort($toReturn);
+        return $toReturn;
     }
 
     /**
@@ -334,13 +326,15 @@ class ComposerFile extends JsonFile
      */
     public function getRequireDev(): array
     {
-        return array_combine(
+        $toReturn = array_combine(
             array_keys($this->devRequirements),
             array_map(function ($item) {
                 return (string)$item;
             },
             $this->devRequirements)
         );
+        ksort($toReturn);
+        return $toReturn;
     }
 
     /**

@@ -103,7 +103,9 @@ class Directory
                 throw new \Exception("Site does not exist and cannot be created.");
             }
         }
-        $this->clonePath = new \SplFileInfo(getcwd() . "/" . $this->info->getName());
+        $this->clonePath = new \SplFileInfo(
+            $this->getDefaultClonePathBase() . DIRECTORY_SEPARATOR . $this->info->getName()
+        );
         if (!$this->clonePath->isDir()) {
             // -oStrictHostKeyChecking=no
             $this->output->writeln(sprintf(
@@ -112,8 +114,13 @@ class Directory
             ));
             // GET CONNECTION INFO
             $connectionInfo = $this->getConnectionInfo();
+            $command = str_replace(
+                $this->info->getName(),
+                $this->getDefaultClonePathBase()  . DIRECTORY_SEPARATOR .  $this->getInfo()->getName(),
+                $connectionInfo['git_command']
+            );
             exec(
-                $connectionInfo['git_command'] . " -oStrictHostKeyChecking=no",
+                $command,
                 $result,
                 $status
             );
@@ -178,7 +185,7 @@ class Directory
      */
     private function getComposerFileExpectedPath()
     {
-        return sprintf("%s/%s/composer.json", getcwd(), $this->info->getName());
+        return sprintf("%s/composer.json", $this->getClonePath());
     }
 
     /**
@@ -320,7 +327,9 @@ class Directory
             );
         }
         $custom = $this->getClonePath() . "/web/modules/custom";
-        $output->writeln(sprintf('Ensure custom modules folder exists: %s', $custom));
+        $output->writeln(
+            sprintf('Ensure custom modules folder exists: %s', $custom)
+        );
         if (!file_exists($custom)) {
             mkdir(
                 $custom,
@@ -328,6 +337,12 @@ class Directory
                 true
             );
         }
+    }
+
+    public function getDefaultClonePathBase()
+    {
+        // Get path resoltion from default composer file directory
+        return dirname(\Composer\Factory::getComposerFile()) . "/local-copies";
     }
 
     /**

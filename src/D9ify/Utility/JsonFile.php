@@ -38,7 +38,7 @@ class JsonFile extends \SplFileObject
         $context = null,
         IOInterface $io = null
     ) {
-        parent::__construct($filename, $openMode, getcwd(), $context);
+        parent::__construct($filename, $openMode, dirname(\Composer\Factory::getComposerFile()), $context);
         $this->setIo($io ?? new BufferIO());
         if ($this->isFile()) {
             $this->original = $this->read();

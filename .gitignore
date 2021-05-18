@@ -6,3 +6,6 @@
 /.DS_Store
 .DS_Store
 .phpunit.result.cache
+/freshdrupalmi-2021
+/freshdrupalmi
+site-clones/*
