@@ -52,6 +52,7 @@ it's dependencies.
  file will re renamed backup-*-composer.json.
 
    [REGEX](https://regex101.com/r/60GonN/1)
+   
    Get every .info.y{a}ml file in source.
 
 ### JS contrib/drupal libraries
@@ -60,6 +61,7 @@ it's dependencies.
  install payload.
 
    [REGEX](https://regex101.com/r/EHYzcz/1)
+   
    Get every package.json in the libraries folder.
 
 ### Write the composer file.
@@ -81,7 +83,9 @@ it's dependencies.
  If they have "module" in the path, it copies the folder to web/modules/custom.
 
    [REGEX](https://regex101.com/r/kUWCou/1)
+   
    get every .info file with "custom" in the path, e.g.
+   
    ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
    ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
    ✓  web/modules/custom/milken_base/milken_base.info.yaml

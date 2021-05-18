@@ -232,6 +232,7 @@ class ProcessCommand extends Command
      *
      * @regex
      * [REGEX](https://regex101.com/r/60GonN/1)
+     *
      * Get every .info.y{a}ml file in source.
      */
     protected function updateDestModulesAndThemesFromSource(InputInterface $input, OutputInterface $output)
@@ -277,6 +278,7 @@ class ProcessCommand extends Command
      *
      * @regex
      * [REGEX](https://regex101.com/r/EHYzcz/1)
+     *
      * Get every package.json in the libraries folder.
      *
      */
@@ -434,7 +436,9 @@ class ProcessCommand extends Command
      *
      * @regex
      * [REGEX](https://regex101.com/r/kUWCou/1)
+     *
      * get every .info file with "custom" in the path, e.g.
+     *
      * ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
      * ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
      * ✓  web/modules/custom/milken_base/milken_base.info.yaml
