@@ -64,8 +64,10 @@
             "vendor/bin/phpcs --standard=psr2 src"
         ],
 		"pre-commit": [
+			"composer d9ify:document",
+			"git add README.md",
 			"composer validate --strict",
-			"composer update --with-dependencies",
+			"composer update -W",
 			"@code:fix",
 			"@code:lint",
 			"@test"

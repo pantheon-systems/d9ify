@@ -5,9 +5,21 @@ namespace D9ify\Utility;
 
 use Symfony\Component\Serializer\Normalizer\CustomNormalizer;
 
+/**
+ * Class ComposerPropertyNormalizer
+ *
+ * @package D9ify\Utility
+ */
 class ComposerPropertyNormalizer extends CustomNormalizer
 {
 
+    /**
+     * @param mixed $object
+     * @param string|null $format
+     * @param array $context
+     *
+     * @return array|\ArrayObject|bool|float|int|string|void|null
+     */
     public function normalize(
         $object,
         string $format = null,
@@ -15,6 +27,15 @@ class ComposerPropertyNormalizer extends CustomNormalizer
     ) {
     }
 
+    /**
+     * @param mixed $data
+     * @param string $type
+     * @param string|null $format
+     * @param array $context
+     *
+     * @return mixed|object
+     * @throws \Symfony\Component\Serializer\Exception\ExceptionInterface
+     */
     public function denormalize(
         $data,
         string $type,

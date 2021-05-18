@@ -14,9 +14,15 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Class ProcessCommand
+ * @name d9ify
+ * @description
+ * The idea behind this site is that there's a single command to create a new Pantheon
+ * D9 site from a messy old D8 site that may or may not be using composer to manage
+ * it's dependencies.
  *
+ * ![Passing Tests](https://github.com/stovak/d9ify/actions/workflows/php.yml/badge.svg)
  *
+ * @usage composer install && composer d9ify:process {PANTHEON_SITE_ID}
  *
  * @package D9ify
  */
@@ -107,25 +113,10 @@ class ProcessCommand extends Command
             $this->updateDestEsLibrariesFromSource($input, $output);
             $this->writeComposer($input, $output);
             $this->destinationComposerInstall();
-            /**
-             * @Step
-             * @description
-             * ### Copy Custom Code.
-             *
-             * This step looks for {MODULENAME}.info.yml files that also have "custom"
-             * in the path. If they have THEME in the path it copies them to web/themes/custom.
-             * If they have "module" in the path, it copies the folder to web/modules/custom.
-             *
-             */
             $this->copyCustomCode($input, $output);
-            /**
-             * @Step
-             * @description
-             * ### Ensure pantheon.yaml has preferred values.
-             */
             $this->copyConfigFiles($input, $output);
             /**
-             * @Setp
+             * @step
              * @description
              * ### Download Database backup.
              */
@@ -157,7 +148,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### Set Source and Destination.
      *
@@ -180,7 +171,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### Set Destination directory
      *
@@ -206,7 +197,7 @@ class ProcessCommand extends Command
 
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### Clone Source & Destination.
      *
@@ -224,11 +215,10 @@ class ProcessCommand extends Command
         $this->destinationDirectory->getComposerObject()->setRepositories(
             $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'] ?? []
         );
-        //$output->writeln(print_r($this->destinationDirectory->getComposerObject()->__toArray(), true));
     }
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### Move over Contrib
      *
@@ -277,7 +267,7 @@ class ProcessCommand extends Command
 
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### JS contrib/drupal libraries
      *
@@ -366,7 +356,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### Write the composer file.
      *
@@ -408,7 +398,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @Step
+     * @step *
      * @description
      * ### composer install
      *
@@ -437,6 +427,14 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @step *
+     * @description
+     * ### Copy Custom Code.
+     *
+     * This step looks for {MODULENAME}.info.yml files that also have "custom"
+     * in the path. If they have THEME in the path it copies them to web/themes/custom.
+     * If they have "module" in the path, it copies the folder to web/modules/custom.
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
@@ -537,6 +535,10 @@ class ProcessCommand extends Command
     }
 
     /**
+     * @step *
+     * @description
+     * ### Ensure pantheon.yaml has preferred values.
+     *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
