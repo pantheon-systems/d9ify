@@ -33,7 +33,7 @@ class DocumentationRenderer
     {
         if (isset($this->block->step)) {
             $lines = [
-                "### {$this->block->step[0]['number']}" .
+                "#### {$this->block->step[0]['number']}" .
                 PHP_EOL . PHP_EOL .
                 $this->getDescription() . PHP_EOL,
                 $this->getRegex() ,

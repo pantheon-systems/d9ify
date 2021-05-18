@@ -20,21 +20,21 @@ it's dependencies.
 
 ## STEPS
 
-### Set Source directory
+#### Set Source directory
 
  Source Param is not optional and needs to be
  a pantheon site ID or name.
 
 
 
-### Set Destination directory
+#### Set Destination directory
 
  Destination name will be {source}-{THIS YEAR} by default
  if you don't provide a value.
 
 
 
-### Clone Source & Destination.
+#### Clone Source & Destination.
 
  Clone both sites to folders inside this root directory.
  If destination does not exist, create the using Pantheon's
@@ -42,7 +42,7 @@ it's dependencies.
 
 
 
-### Move over Contrib
+#### Move over Contrib
 
  Spelunk the old site for MODULE.info.yaml and after reading
  those files. This step searches for every {modulename}.info.yml. If that
@@ -55,7 +55,7 @@ it's dependencies.
    
    Get every .info.y{a}ml file in source.
 
-### JS contrib/drupal libraries
+#### JS contrib/drupal libraries
 
  Process /libraries folder if exists & Add ES Libraries to the composer
  install payload.
@@ -64,19 +64,19 @@ it's dependencies.
    
    Get every package.json in the libraries folder.
 
-### Write the composer file.
+#### Write the composer file.
 
  Write the composer file to disk.
 
 
 
-### composer install
+#### composer install
 
  Exception will be thrown if install fails.
 
 
 
-### Copy Custom Code
+#### Copy Custom Code
 
  This step looks for {MODULENAME}.info.yml files that also have "custom"
  in the path. If they have THEME in the path it copies them to web/themes/custom.
@@ -90,7 +90,7 @@ it's dependencies.
    ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
    ✓  web/modules/custom/milken_base/milken_base.info.yaml
 
-### Ensure pantheon.yaml has preferred values
+#### Ensure pantheon.yaml has preferred values
 
  Write known values to the pantheon.yml file.
 
