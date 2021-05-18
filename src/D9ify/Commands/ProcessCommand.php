@@ -20,6 +20,14 @@ use Symfony\Component\Yaml\Yaml;
  * D9 site from a messy old D8 site that may or may not be using composer to manage
  * it's dependencies.
  *
+ *
+ * | WARNING                                                                     |
+ * -------------------------------------------------------------------------------
+ * | THIS PROJECT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE   |
+ * | ERROR CHECKING. PLEASE USE AT YOUR OWN RISK.                                |
+ * | The guide to use this file is in /README.md                                 |
+ *
+ *
  * ![Passing Tests](https://github.com/stovak/d9ify/actions/workflows/php.yml/badge.svg)
  *
  * @usage composer install && composer d9ify:process {PANTHEON_SITE_ID}
@@ -34,7 +42,7 @@ class ProcessCommand extends Command
      */
     public static $HELP_TEXT = [
         "*******************************************************************************",
-        "* THIS SCRIPT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE    *",
+        "* THIS PROJECT IS IN ALPHA VERSION STATUS AND AT THIS POINT HAS VERY LITTLE   *",
         "* ERROR CHECKING. PLEASE USE AT YOUR OWN RISK.                                *",
         "* The guide to use this file is in /README.md                                 *",
         "*******************************************************************************",
@@ -148,7 +156,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step Set Source and Destination.
+     * @step Set Source directory
      * @description
      * Source Param is not optional and needs to be
      * a pantheon site ID or name.
@@ -172,9 +180,7 @@ class ProcessCommand extends Command
      * @step Set Destination directory
      * @description
      * Destination name will be {source}-{THIS YEAR} by default
-     * if you don't provide a value. Destination name will be
-     * {source}-{THIS YEAR} by default if you don't provide a value.
-     *
+     * if you don't provide a value.
      *
      * @param \D9ify\Site\Directory $destinationDirectory
      */
@@ -224,13 +230,13 @@ class ProcessCommand extends Command
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
+     * @regex
+     * [REGEX](https://regex101.com/r/60GonN/1)
+     * Get every .info.y{a}ml file in source.
      */
     protected function updateDestModulesAndThemesFromSource(InputInterface $input, OutputInterface $output)
     {
-        /**
-         * https://regex101.com/r/60GonN/1
-         * Get every .info.y{a}ml file in source.
-         */
+
         $infoFiles = $this->sourceDirectory->spelunkFilesFromRegex('/(\.info\.yml|\.info\.yaml?)/', $output);
         $toMerge = [];
         $composerFile = $this->getDestinationDirectory()
@@ -268,14 +274,14 @@ class ProcessCommand extends Command
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @throws \JsonException
+     *
+     * @regex
+     * [REGEX](https://regex101.com/r/EHYzcz/1)
+     * Get every package.json in the libraries folder.
+     *
      */
     protected function updateDestEsLibrariesFromSource(InputInterface $input, OutputInterface $output)
     {
-        /**
-         * @extra
-         * https://regex101.com/r/EHYzcz/1
-         * Get every package.json in the libraries folder.
-         */
         $fileList = $this->sourceDirectory->spelunkFilesFromRegex('/libraries\/[0-9a-z-]*\/(package\.json$)/', $output);
         $repos = $this->sourceDirectory->getComposerObject()->getOriginal()['repositories'];
         $composerFile = $this->getDestinationDirectory()->getComposerObject();
@@ -425,18 +431,18 @@ class ProcessCommand extends Command
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @return bool
+     *
+     * @regex
+     * [REGEX](https://regex101.com/r/kUWCou/1)
+     * get every .info file with "custom" in the path, e.g.
+     * ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
+     * ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
+     * ✓  web/modules/custom/milken_base/milken_base.info.yaml
      */
     public function copyCustomCode(InputInterface $input, OutputInterface $output) :bool
     {
         $failure_list = [];
-        /**
-         * @extra
-         * REGEX: https://regex101.com/r/kUWCou/1
-         * get every .info file with "custom" in the path, e.g.
-         * ✓  web/modules/custom/milken_migrate/milken_migrate.info.yaml
-         * ✗  web/modules/contrib/entity_embed/entity_embed.info.yaml
-         * ✓  web/modules/custom/milken_base/milken_base.info.yaml
-         */
+
         $infoFiles = $this
             ->sourceDirectory
             ->spelunkFilesFromRegex('/custom\/[0-9a-z-_]*\/[0-9a-z-_]*(\.info\.yml|\.info\.yaml?)/', $output);

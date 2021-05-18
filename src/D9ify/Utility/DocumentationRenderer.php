@@ -32,15 +32,16 @@ class DocumentationRenderer
     public function serialize()
     {
         if (isset($this->block->step)) {
-            return [
+            $lines = [
                 "### {$this->block->step[0]['number']}" .
                 PHP_EOL . PHP_EOL .
                 $this->getDescription() . PHP_EOL,
+                $this->getRegex() ,
                 PHP_EOL,
             ];
         }
         if (isset($this->block->name)) {
-            return [
+            $lines = [
                 "# {$this->block->name[0]}" . PHP_EOL,
                 $this->getDescription(null) . PHP_EOL,
                 "## USAGE " . PHP_EOL ,
@@ -48,7 +49,7 @@ class DocumentationRenderer
                 "## STEPS" . PHP_EOL . PHP_EOL
             ];
         }
-        return null;
+        return $lines ?? null;
     }
 
     /**
@@ -59,10 +60,36 @@ class DocumentationRenderer
         return join(PHP_EOL, $this->serialize());
     }
 
-
-    public function getDescription($delimiter = " ")
+    /**
+     * @param string $delimiter
+     *
+     * @return string|null
+     */
+    public function getRegex($delimiter = "   ")
     {
+        if (isset($this->block->regex)) {
+            $lines = [];
+            foreach ($this->block->regex as $regexTag) {
+                $lines += explode(PHP_EOL, $regexTag);
+            }
+            return join(
+                PHP_EOL,
+                array_map(function ($item) use ($delimiter) {
+                    return $delimiter . $item;
+                }, $lines)
+            );
+        }
+        return null;
+    }
 
+
+    /**
+     * @param string $delimiter
+     *
+     * @return string|null
+     */
+    public function getDescription($delimiter = " ") : ?string
+    {
         if (isset($this->block->description)) {
             $lines = [];
             foreach ($this->block->description as $descriptionTag) {
@@ -75,5 +102,6 @@ class DocumentationRenderer
                 }, $lines)
             );
         }
+        return null;
     }
 }
