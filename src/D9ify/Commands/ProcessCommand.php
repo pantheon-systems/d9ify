@@ -141,10 +141,7 @@ class ProcessCommand extends Command
             $this->copyCustomCode($input, $output);
             $this->copyConfigFiles($input, $output);
             $this->downloadDatabase($input, $output);
-            $this->restoreDatabaseToDestinationSite($input, $output);
             $this->downloadSourceSiteFilesDirectory($input, $output);
-            $this->unpackSiteFilesAndRsyncToDestination($input, $output);
-            $this->checkinVersionManagedFilesAndPush($input, $output);
         } catch (D9ifyExceptionBase $d9ifyException) {
             // TODO: Composer install exception help text
             $output->writeln((string) $d9ifyException);
@@ -668,18 +665,7 @@ class ProcessCommand extends Command
     }
 
     /**
-     * @step TODO: restore database backup to destination site
-     * @description
-     * mysql {NEWSITE DATABASE CONNECTION INFO} < backup.tgz
-     *
-     */
-    public function restoreDatabaseToDestinationSite(InputInterface $input, OutputInterface $output)
-    {
-        $output->writeln("===> TODO: Restore database to destination");
-    }
-
-    /**
-     * @step TODO: Download backup of source files
+     * @step Download backup of source files
      * @description
      * Using terminus, get a copy of the sites/default/files folder
      *
@@ -688,33 +674,35 @@ class ProcessCommand extends Command
      * | We're downloading a backup rather than rsyncing from the source.            |
      * | This is going to have a tendency to be faster with site archives > 1gb      |
      *
-     *
      */
     public function downloadSourceSiteFilesDirectory(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("===> TODO: download sites/default/files from source");
-    }
+        $output->writeln("===> Downloading Files Directory");
+        $root = dirname(\Composer\Factory::getComposerFile()) . "/local-copies";
+        exec(
+            sprintf(
+                "terminus backup:create %s.live --element=files --yes",
+                $this->getSourceDirectory()->getSiteInfo()->getId()
+            ),
+            $result,
+            $status
+        );
+        if ($status !== 0) {
+            $output->writeln($result);
+        }
 
-    /**
-     * @step TODO: unpack site files archive and rsync them up.
-     * @description
-     * There's a hard limit to the size archive you can upload. We'll do an rysnc
-     * but if/when it times out, we need a way of restarting the rsync.
-     *
-     */
-    public function unpackSiteFilesAndRsyncToDestination(InputInterface $input, OutputInterface $output)
-    {
-        $output->writeln("===> TODO: unpack files archive and rsync to destination");
-    }
-
-    /**
-     * @step TODO: check in the version-managed files
-     * @description
-     * Push them up to dev environment.
-     *
-     */
-    public function checkinVersionManagedFilesAndPush(InputInterface $input, OutputInterface $output)
-    {
-        $output->writeln("===> TODO: Check-in Version-managed files and push.");
+        exec(
+            sprintf(
+                "terminus backup:get %s.live --element=files --yes --to='%s'",
+                $this->getSourceDirectory()->getSiteInfo()->getId(),
+                $root . DIRECTORY_SEPARATOR .
+                ($this->getSourceDirectory()->getSiteInfo()->getName() ?? "backup") . "-files.tgz"
+            ),
+            $result,
+            $status
+        );
+        if ($status !== 0) {
+            $output->writeln($result);
+        }
     }
 }

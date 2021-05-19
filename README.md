@@ -124,13 +124,7 @@ it's dependencies.
 
 
 
-#### ===> TODO: restore database backup to destination site
-
-   mysql {NEWSITE DATABASE CONNECTION INFO} < backup.tgz
-
-
-
-#### ===> TODO: Download backup of source files
+#### ===> Download backup of source files
 
    Using terminus, get a copy of the sites/default/files folder
    
@@ -138,19 +132,6 @@ it's dependencies.
    |-----------------------------------------------------------------------------|
    | We're downloading a backup rather than rsyncing from the source.            |
    | This is going to have a tendency to be faster with site archives > 1gb      |
-
-
-
-#### ===> TODO: unpack site files archive and rsync them up.
-
-   There's a hard limit to the size archive you can upload. We'll do an rysnc
-   but if/when it times out, we need a way of restarting the rsync.
-
-
-
-#### ===> TODO: check in the version-managed files
-
-   Push them up to dev environment.
 
 
 

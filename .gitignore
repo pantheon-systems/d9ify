@@ -8,4 +8,4 @@
 .phpunit.result.cache
 /freshdrupalmi-2021
 /freshdrupalmi
-site-clones/*
+local-copies/*

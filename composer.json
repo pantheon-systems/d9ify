@@ -47,6 +47,9 @@
 		"d9ify:document": [
 			"\\D9ify\\Application::document"
 		],
+		"d9ify:commitAndPush": [
+			"\\D9ify\\Application::commitAndPush"
+		],
         "test": [
 			"@test:unit",
 			"@test:functional"
