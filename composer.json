@@ -76,13 +76,14 @@
 			"@test"
 		],
 		"post-install-cmd": [
-			"bash devops/setup-precommit.sh",
+			"[ -z ${GITHUB_WORKFLOW} ] || bash devops/setup-precommit.sh",
+			"Tooly\\ScriptHandler::installPharTools"
+		],`
+		"post-update-cmd": [
+			"[ -z ${GITHUB_WORKFLOW} ] || bash devops/setup-precommit.sh",
 			"Tooly\\ScriptHandler::installPharTools"
 		],
-		"post-update-cmd": [
-			"bash devops/setup-precommit.sh",
-			"Tooly\\ScriptHandler::installPharTools"
-		]
+		"post-in",
     },
 	"extra": {
 		"tools": {
